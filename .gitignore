@@ -1,0 +1,11 @@
+
+.vscode/*
+
+koptplanner/data/VisibilityMatrix.m
+koptplanner/data/latestPath.csv
+koptplanner/data/tourlength.m
+request/meshes/Original/*
+request/visualization/inspectionScenario.m
+
+#Temporary backup files
+*~

@@ -32,6 +32,9 @@
 #include <shape_msgs/Plane.h>
 #include <ros/package.h>
 
+#include "ViewpointReduction/ViewpointReduction.h"
+#include "ViewpointReduction.cpp"
+
 #ifdef __TIMING_INFO__
  long time_DBS;
  long time_RRTS;
@@ -85,6 +88,34 @@ double g_cost;
 string g_tourlength;
 koptError_t koptError;
 double g_max_obs_dim;
+
+// void generateVisibilityMatrix(std::vector<tri_t*> tri, StateVector * VP, int iter)
+// {
+//   std::string pkgPath = ros::package::getPath("koptplanner");
+//   std::fstream plannerLog;
+//   plannerLog.open((pkgPath+"/data/VisibilityMatrix.m").c_str(), std::ios::app | std::ios::out);
+//   if(!plannerLog.is_open())
+//     ROS_ERROR("Could not open VisibiltyMatrix.log");
+  
+//   stringstream ss;
+//   ss << iter;
+//   string iterStr = ss.str();
+//   plannerLog << "VisibilityMatrix"+iterStr+" = [\n";
+
+//   //Viewpoint-Counter
+//   for(int i = 0; i < maxID; i++)
+//   {
+//     //Triangle-Counter
+//     for (int j = 0; j < maxID; j++)
+//     {
+//       bool isVisible = tri[j]->isVisible(VP[i]);
+//       plannerLog << (int)isVisible << ",\t";
+//     }
+//     plannerLog << ";\n";
+//   }
+//   plannerLog << "];\n";
+//   plannerLog.close();
+// }
 
 bool plan(koptplanner::inspection::Request  &req,
     koptplanner::inspection::Response &res)
@@ -559,6 +590,22 @@ bool plan(koptplanner::inspection::Request  &req,
       point.lifetime = ros::Duration();
       viewpoint_pub.publish(point);
     }
+    //TODO: Check if dynamic allocation is neccesary due to memory consumption
+    ViewpointReduction vpRed (maxID);
+    vpRed.generateVisibilityMatrix(tri, VP, koptPlannerIteration);
+
+    ROS_INFO("No of visible triangles for VPs 1-10: %i\t%i\t%i\t%i\t%i\t%i\t%i\t%i\t%i\t%i\t" ,
+      (int)vpRed.getSumOfTriangles().at(0),
+      (int)vpRed.getSumOfTriangles().at(1),
+      (int)vpRed.getSumOfTriangles().at(2),
+      (int)vpRed.getSumOfTriangles().at(3),
+      (int)vpRed.getSumOfTriangles().at(4),
+      (int)vpRed.getSumOfTriangles().at(5),
+      (int)vpRed.getSumOfTriangles().at(6),
+      (int)vpRed.getSumOfTriangles().at(7),
+      (int)vpRed.getSumOfTriangles().at(8),
+      (int)vpRed.getSumOfTriangles().at(9));
+
     tri_t::initialized = true;
     
     if(koptError != SUCCESSFUL)
