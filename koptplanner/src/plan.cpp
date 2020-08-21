@@ -34,6 +34,7 @@
 
 #include "ViewpointReduction/ViewpointReduction.h"
 #include "ViewpointReduction.cpp"
+//TO-DO: Do not include cpp file
 
 #ifdef __TIMING_INFO__
  long time_DBS;
@@ -558,6 +559,15 @@ bool plan(koptplanner::inspection::Request  &req,
       delete s2;
       s2 = NULL;
 
+    }
+    //TO-DO: Check if dynamic allocation is neccesary due to memory consumption
+    ViewpointReduction vpRed (maxID);
+    vpRed.generateVisibilityMatrix(tri, VP);
+    maxID = vpRed.getNoOfUniqueVPs();
+
+    for(int i=0; i<maxID; i++)
+    {
+      ros::Rate delayRate(50.0);
       /* display sampled viewpoint in rviz */
       visualization_msgs::Marker point;
       point.header.frame_id = "/kopt_frame";
@@ -569,11 +579,11 @@ bool plan(koptplanner::inspection::Request  &req,
       point.pose.position.y = VP[i][1];
       point.pose.position.z = VP[i][2];
 
-#if DIMENSIONALITY>4
+      #if DIMENSIONALITY>4
       tf::Quaternion q = tf::createQuaternionFromRPY(VP[i][3],VP[i][4],VP[i][5]);
-#else
+      #else
       tf::Quaternion q = tf::createQuaternionFromRPY(0,0,VP[i][3]);
-#endif
+      #endif
       point.pose.orientation.x = q.x();
       point.pose.orientation.y = q.y();
       point.pose.orientation.z = q.z();
@@ -589,22 +599,8 @@ bool plan(koptplanner::inspection::Request  &req,
       point.color.a = 0.7;
       point.lifetime = ros::Duration();
       viewpoint_pub.publish(point);
+      delayRate.sleep();
     }
-    //TODO: Check if dynamic allocation is neccesary due to memory consumption
-    ViewpointReduction vpRed (maxID);
-    vpRed.generateVisibilityMatrix(tri, VP, koptPlannerIteration);
-
-    ROS_INFO("No of visible triangles for VPs 1-10: %i\t%i\t%i\t%i\t%i\t%i\t%i\t%i\t%i\t%i\t" ,
-      (int)vpRed.getSumOfTriangles().at(0),
-      (int)vpRed.getSumOfTriangles().at(1),
-      (int)vpRed.getSumOfTriangles().at(2),
-      (int)vpRed.getSumOfTriangles().at(3),
-      (int)vpRed.getSumOfTriangles().at(4),
-      (int)vpRed.getSumOfTriangles().at(5),
-      (int)vpRed.getSumOfTriangles().at(6),
-      (int)vpRed.getSumOfTriangles().at(7),
-      (int)vpRed.getSumOfTriangles().at(8),
-      (int)vpRed.getSumOfTriangles().at(9));
 
     tri_t::initialized = true;
     

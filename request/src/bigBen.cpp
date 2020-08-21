@@ -72,7 +72,8 @@ int main(int argc, char **argv)
   srv.request.incidenceAngle = M_PI/6.0;
   srv.request.minDist = 10.0;
   srv.request.maxDist = 50.0;
-  srv.request.numIterations = 20;
+  srv.request.numIterations = 1;
+  //TO-DO: Introduce ROS-Parameter for this
 
   /* read STL file and publish to rviz */
   std::vector<nav_msgs::Path> * mesh = readSTLfile(ros::package::getPath("request")+"/meshes/BigBen.stl");

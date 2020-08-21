@@ -72,7 +72,7 @@ int main(int argc, char **argv)
   srv.request.incidenceAngle = M_PI/6.0;
   srv.request.minDist = 4.0;
   srv.request.maxDist = 8.0;
-  srv.request.numIterations = 20;
+  srv.request.numIterations = 1;
 
   /* read STL file and publish to rviz */
   std::vector<nav_msgs::Path> * mesh = readSTLfile(ros::package::getPath("request")+"/meshes/hoa_hakanaia.stl");
