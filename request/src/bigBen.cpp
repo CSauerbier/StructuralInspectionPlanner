@@ -191,7 +191,7 @@ std::vector<nav_msgs::Path> * readSTLfile(std::string name)
       if(line[q] == 'v')
       {
         const double yawTrafo = 0.0;      // used to rotate the mesh before processing
-        const double scaleFactor = 1.0;   // used to scale the mesh before processing
+        const double scaleFactor = 2.0;   // used to scale the mesh before processing
         const double offsetX = 0.0;       // used to offset the mesh before processing
         const double offsetY = 0.0;       // used to offset the mesh before processing
         const double offsetZ = 0.0;       // used to offset the mesh before processing

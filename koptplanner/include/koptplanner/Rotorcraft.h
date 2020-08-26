@@ -119,7 +119,7 @@ namespace Rotorcraft
      *
      * More elaborate description
      */
-    Vector3f camBoundRotated(Vector3f normal, double roll, double yaw);
+    Vector3f camBoundRotated(Vector3f normal, double roll, double yaw, double pitch);
   };
 
   /*!

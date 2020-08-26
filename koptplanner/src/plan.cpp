@@ -90,33 +90,6 @@ string g_tourlength;
 koptError_t koptError;
 double g_max_obs_dim;
 
-// void generateVisibilityMatrix(std::vector<tri_t*> tri, StateVector * VP, int iter)
-// {
-//   std::string pkgPath = ros::package::getPath("koptplanner");
-//   std::fstream plannerLog;
-//   plannerLog.open((pkgPath+"/data/VisibilityMatrix.m").c_str(), std::ios::app | std::ios::out);
-//   if(!plannerLog.is_open())
-//     ROS_ERROR("Could not open VisibiltyMatrix.log");
-  
-//   stringstream ss;
-//   ss << iter;
-//   string iterStr = ss.str();
-//   plannerLog << "VisibilityMatrix"+iterStr+" = [\n";
-
-//   //Viewpoint-Counter
-//   for(int i = 0; i < maxID; i++)
-//   {
-//     //Triangle-Counter
-//     for (int j = 0; j < maxID; j++)
-//     {
-//       bool isVisible = tri[j]->isVisible(VP[i]);
-//       plannerLog << (int)isVisible << ",\t";
-//     }
-//     plannerLog << ";\n";
-//   }
-//   plannerLog << "];\n";
-//   plannerLog.close();
-// }
 
 bool plan(koptplanner::inspection::Request  &req,
     koptplanner::inspection::Response &res)
@@ -582,7 +555,7 @@ bool plan(koptplanner::inspection::Request  &req,
       #if DIMENSIONALITY>4
       tf::Quaternion q = tf::createQuaternionFromRPY(VP[i][3],VP[i][4],VP[i][5]);
       #else
-      tf::Quaternion q = tf::createQuaternionFromRPY(0,0,VP[i][3]);
+      tf::Quaternion q = tf::createQuaternionFromRPY(0,VP[i][4],VP[i][3]);
       #endif
       point.pose.orientation.x = q.x();
       point.pose.orientation.y = q.y();

@@ -152,7 +152,7 @@ bool Rotorcraft::Triangle<System_t, State_t, Vector_t, region_t>::isVisible(Vect
   if((st-this->x3).dot(this->n3)<0)
     return false;
   for(int it = 0; it<camBoundNormal.size(); it++) {
-    Vector3f camN = camBoundRotated(camBoundNormal[it], 0.0, s[3]);
+    Vector3f camN = camBoundRotated(camBoundNormal[it], 0.0, s[3], s[4]);
     if(camN.dot(this->x1 - st)<0)
       return false;
     if(camN.dot(this->x2 - st)<0)
@@ -192,8 +192,11 @@ Vector_t Rotorcraft::Triangle<System_t, State_t, Vector_t, region_t>::dualBarrie
   for(int i = 0; i<DIMENSIONALITY; i++)
     best[i] = 0;
   double cost = DBL_MAX;
-  double angleLower = g_camPitch+g_camAngleVertical/2.0;
-  double angleUpper = g_camPitch-g_camAngleVertical/2.0;
+
+  // TO-DO: Check if more elaborate method than angle definition is neccesary
+  double angleLower =  (M_PI+g_camAngleVertical)/2.0;
+  double angleUpper = -(M_PI+g_camAngleVertical)/2.0;
+
   int maxPW = 12;
   double psiInc = 2*M_PI/maxPW;
   Vector3f m = (this->x1+this->x2+this->x3)/3;
@@ -273,7 +276,7 @@ Vector_t Rotorcraft::Triangle<System_t, State_t, Vector_t, region_t>::dualBarrie
 
     StateVector g; g << (this->x1[0]+this->x2[0]+this->x3[0])/3+DD*this->aabs[0],
                         (this->x1[1]+this->x2[1]+this->x3[1])/3+DD*this->aabs[1],
-                        (this->x1[2]+this->x2[2]+this->x3[2])/3+DD*this->aabs[2], 0.0;
+                        (this->x1[2]+this->x2[2]+this->x3[2])/3+DD*this->aabs[2], 0.0, 0.0;
 
     static real_t lbx[3] = { X_MIN, Y_MIN, Z_MIN };
     static real_t ubx[3] = { X_MAX, Y_MAX, Z_MAX };
@@ -370,6 +373,8 @@ Vector_t Rotorcraft::Triangle<System_t, State_t, Vector_t, region_t>::dualBarrie
       alfa1 = atan2(g[1]-(*state1)[1], g[0]-(*state1)[0]);
       alfa2 = atan2((*state2)[1]-g[1], (*state2)[0]-g[0]);
     }
+    
+    //TO-DO: CLEAN-UP: costOrientation not neccesary, but needed for VPsolver. Should modify
     for(double psi = -M_PI; psi<M_PI; psi+=g_angular_discretization_step)
     {
       StateVector s = g;
@@ -387,11 +392,21 @@ Vector_t Rotorcraft::Triangle<System_t, State_t, Vector_t, region_t>::dualBarrie
       }
       if(c<=costOrientation && this->isVisible(s))
       {
-        g[3] = s[3];
         costOrientation = c;
-        orSolFound = true;
       }
     } 
+    
+    //Setting pitch entry so that the optical axis vector points at the center of the triangle
+    Vector3f triMean((this->x1[0]+this->x2[0]+this->x3[0])/3,
+                     (this->x1[1]+this->x2[1]+this->x3[1])/3,
+                     (this->x1[2]+this->x2[2]+this->x3[2])/3  );
+    g[3] = atan2(triMean[1]-g[1], triMean[0]-g[0]);
+    g[4] = atan2(g[2]-triMean[2], hypot(g[0]-triMean[0], g[1]-triMean[1]));
+    if(this->isVisible(g))
+    {
+      orSolFound = true;
+    }
+    
     if(this->VPSolver->getObjVal()+xxCompensate+costOrientation<cost && solFoundLocal)
     {
       best = g;
@@ -458,7 +473,7 @@ Vector_t Rotorcraft::Triangle<System_t, State_t, Vector_t, region_t>::dualBarrie
       plannerLog << "   x3: (" << this->x3[0] << ", " << this->x3[1] << ", " << this->x3[2] << ")\n";
       plannerLog.close();
     }
-    koptError = VIEWPOINT_INFEASIBILITY;
+    //koptError = VIEWPOINT_INFEASIBILITY;  //TO-DO: REVERT
   }
   for(int i = 0; i<4; i++)
     assert(best[i]<1e15&& best[i]>-1e15);
@@ -673,13 +688,15 @@ void Rotorcraft::Triangle<System_t, State_t, Vector_t, region_t>::setCamBoundNor
 }
 
 template<class System_t, class State_t, class Vector_t, class region_t>
-Vector3f Rotorcraft::Triangle<System_t, State_t, Vector_t, region_t>::camBoundRotated(Vector3f normal, double roll, double yaw)
+Vector3f Rotorcraft::Triangle<System_t, State_t, Vector_t, region_t>::camBoundRotated(Vector3f normal, double roll, double yaw, double pitch)
 {
   Vector3f x(1, 0, 0);
+  Vector3f y(0, 1, 0);
   Vector3f z(0, 0, 1);
   AngleAxisf mroll = AngleAxisf(roll, x);
+  AngleAxisf mpitch = AngleAxisf(pitch, y);
   AngleAxisf myaw = AngleAxisf(yaw, z);
-  return myaw*(mroll*normal);
+  return myaw*(mpitch*(mroll*normal));
 }
 
 #endif

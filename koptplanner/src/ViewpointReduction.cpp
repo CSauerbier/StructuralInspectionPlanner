@@ -12,8 +12,10 @@ ViewpointReduction::ViewpointReduction(int vpCount)
 }
 
 //TO-DO: Replace VPcount variable by a better solution to get the number of viewpoints
-//TO-DO: Handle tri-Entries that correspond to required view points
+//TO-DO: Handle tri-Entries that correspond to required view points (Class variable "Fixpoint" = true)
 //TO-DO: Different system to keep track of rows and columns
+//TO-DO: Make more robust, e.g. by initializing all class variables 
+//TO-DO: LKH Error "DIMENSION < 3 or not specified" occurs when no triangle is visible
 void ViewpointReduction::generateVisibilityMatrix(std::vector<tri_t*> tri, StateVector * VP)
 {
   this->visMat.resize(tri.size(),this->vpCount);
@@ -110,7 +112,7 @@ void ViewpointReduction::solveSetCoveringProbGreedy()
     this->viewpoints_kept.push_back(maxVisibleElementIndex);
     if (oldIndex == maxVisibleElementIndex)
     {
-      ROS_ERROR("Viewpoint Reduction no longer converging at iteration %i", itn);
+      ROS_INFO("Viewpoint Reduction no longer converging at iteration %i", itn);
       break;
     } 
     
@@ -140,30 +142,34 @@ void ViewpointReduction::solveSetCoveringProbGreedy()
       }
     }
 
-    //DEBUG/////////////////////////////
-    itn++;
-    int noUnseen = 0;
-    if (itn < 10)
-    {
-      std_msgs::String msg;
-      std::stringstream ss;
-      ss << "Triangles covered: ";
+    // //DEBUG///////////////////////////// TO-DO: CLEAN-UP
+    // itn++;
+    // int noUnseen = 0;
+    // if (itn < 10)
+    // {
+    //   std_msgs::String msg;
+    //   std::stringstream ss;
+    //   ss << "Triangles covered: ";
 
-      for(int i=0; i<triangleCovered.size(); i++)
-      {
-        ss << triangleCovered.at(i);
-      }
-      msg.data = ss.str();
+    //   for(int i=0; i<triangleCovered.size(); i++)
+    //   {
+    //     ss << triangleCovered.at(i);
+    //   }
+    //   msg.data = ss.str();
 
-      //ROS_INFO("%s", msg.data.c_str());
-    }
-    for (int i=0; i<triangleCovered.size(); i++)
-    {
-      if(triangleCovered.at(i)==false) noUnseen++;
-    }
-    if(itn == 40) ROS_INFO("Unseen Triangle:\t%i", maxVisibleElementIndex);
-    /////////////////////////////////////
-  }while(allTrisCovered == false); //while there remains a "false" entry
+    // }
+    // for (int i=0; i<triangleCovered.size(); i++)
+    // {
+    //   if(triangleCovered.at(i)==false) noUnseen++;
+    // }
+    // ROS_ERROR("Number of unseen Triangles: %i", noUnseen);
+    // if(itn == 40)
+    // {
+    //   ROS_ERROR("Unseen Triangle:\t%i", maxVisibleElementIndex);
+    //   break;  
+    // }
+    // /////////////////////////////////////
+  }while(allTrisCovered == false);
 
   //Debug////////////////////////
   std::stringstream ss;
