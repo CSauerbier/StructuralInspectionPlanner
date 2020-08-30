@@ -405,11 +405,11 @@ Vector_t Rotorcraft::Triangle<System_t, State_t, Vector_t, region_t>::dualBarrie
     if(this->isVisible(g))
     {
       orSolFound = true;
+      best = g;
     }
     
     if(this->VPSolver->getObjVal()+xxCompensate+costOrientation<cost && solFoundLocal)
     {
-      best = g;
       cost = this->VPSolver->getObjVal()+xxCompensate+costOrientation;
     }
     solFound |= solFoundLocal;
