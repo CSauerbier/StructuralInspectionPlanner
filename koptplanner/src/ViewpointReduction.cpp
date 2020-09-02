@@ -12,12 +12,15 @@ ViewpointReduction::ViewpointReduction(int vpCount)
 }
 
 //TO-DO: Replace VPcount variable by a better solution to get the number of viewpoints
-//TO-DO: Handle tri-Entries that correspond to required view points (Class variable "Fixpoint" = true)
+//TO-DO: Handle tri-Entries that correspond to required view points (Member variable "Fixpoint" = true)
 //TO-DO: Different system to keep track of rows and columns
-//TO-DO: Make more robust, e.g. by initializing all class variables 
+//TO-DO: Make more robust, e.g. by initializing all member variables 
 //TO-DO: LKH Error "DIMENSION < 3 or not specified" occurs when no triangle is visible
 void ViewpointReduction::generateVisibilityMatrix(std::vector<tri_t*> tri, StateVector * VP)
 {
+  this->triangles = tri;  //TO-DO: Consider using Constructor
+  this->view_points = VP;
+
   this->visMat.resize(tri.size(),this->vpCount);
   this->visMat.fill(false);
 
@@ -35,7 +38,6 @@ void ViewpointReduction::generateVisibilityMatrix(std::vector<tri_t*> tri, State
   for(int i = 0; i < this->vpCount; i++)
   {
     //Triangle-Counter, rows
-    //TO-DO: Use iterator
     for (int j = 0; j < tri.size(); j++)
     {
       bool isVisible = tri.at(j)->isVisible(VP[i]);
@@ -89,7 +91,7 @@ int ViewpointReduction::getNoOfUniqueVPs()
   return this->viewpoints_kept.size();
 }
 
-std::vector<int> ViewpointReduction::getVPsKept()
+std::vector<VisibilityContainer> ViewpointReduction::getVPsKept()
 {
   return this->viewpoints_kept;
 }
@@ -98,7 +100,8 @@ void ViewpointReduction::solveSetCoveringProbGreedy()
 {
   std::vector<bool> triangleCovered(this->visMat.cols(), false);    //to keep track whether or not the facet seen by some VP
   
-  bool allTrisCovered;
+  bool allTrisCovered;  //TO-DO: Only keep one of these
+  int no_uncovered_tris = 0;
   int itn = 0;
   do
   {
@@ -109,18 +112,19 @@ void ViewpointReduction::solveSetCoveringProbGreedy()
     int maxVisibleElementIndex;
     int oldIndex = maxVisibleElementIndex;
     maxVisibleElementIndex = std::max_element(this->sumsOfTriangles.begin(),this->sumsOfTriangles.end()) - this->sumsOfTriangles.begin();
-    this->viewpoints_kept.push_back(maxVisibleElementIndex);
     if (oldIndex == maxVisibleElementIndex)
     {
-      ROS_INFO("Viewpoint Reduction no longer converging at iteration %i", itn);
+      ROS_INFO("Viewpoint Reduction no longer converging at iteration %i, %i uncovered facets", itn, no_uncovered_tris);
       break;
     } 
     
+    std::vector<tri_t*> tris_temp;
     //looping over triangles
     for(int i=0; i<this->visMat.rows(); i++){
       if(this->visMat.coeff (i,maxVisibleElementIndex) == true)
       {
         triangleCovered.at(i) = true;
+        tris_temp.push_back(this->triangles.at(i));
         
         //Once a facet is seen by a VP that is already selected, set the row to false
         //so that it does not contribute to the score of next VPs
@@ -133,42 +137,21 @@ void ViewpointReduction::solveSetCoveringProbGreedy()
 
     //Check if all facets are seen by some VP
     allTrisCovered = true;
+    no_uncovered_tris = 0;
     for(int i=0; i<triangleCovered.size(); i++)
     {
       if(triangleCovered.at(i) == false) 
       {
         allTrisCovered = false;
-        break;
+        no_uncovered_tris++;
       }
     }
 
-    // //DEBUG///////////////////////////// TO-DO: CLEAN-UP
-    // itn++;
-    // int noUnseen = 0;
-    // if (itn < 10)
-    // {
-    //   std_msgs::String msg;
-    //   std::stringstream ss;
-    //   ss << "Triangles covered: ";
+    VisibilityContainer vc_temp;
+    vc_temp.set(maxVisibleElementIndex, &this->view_points[maxVisibleElementIndex], tris_temp);
+    this->viewpoints_kept.push_back(vc_temp);
 
-    //   for(int i=0; i<triangleCovered.size(); i++)
-    //   {
-    //     ss << triangleCovered.at(i);
-    //   }
-    //   msg.data = ss.str();
-
-    // }
-    // for (int i=0; i<triangleCovered.size(); i++)
-    // {
-    //   if(triangleCovered.at(i)==false) noUnseen++;
-    // }
-    // ROS_ERROR("Number of unseen Triangles: %i", noUnseen);
-    // if(itn == 40)
-    // {
-    //   ROS_ERROR("Unseen Triangle:\t%i", maxVisibleElementIndex);
-    //   break;  
-    // }
-    // /////////////////////////////////////
+    itn++;
   }while(allTrisCovered == false);
 
   //Debug////////////////////////
@@ -176,13 +159,13 @@ void ViewpointReduction::solveSetCoveringProbGreedy()
   ss << "Viewpoints kept:\t";
   for (int i=0; i<viewpoints_kept.size(); i++)
   {
-    ss << viewpoints_kept.at(i) << "\t";
+    ss << viewpoints_kept.at(i).getVPNum() << "\t";
   }
   ROS_INFO("%s",ss.str().c_str());
   ///////////////////////////////
 }
 
-//TO-DO: Do not pass VP, use class variable
+//TO-DO: Do not pass VP, use member variable
 //TO-DO: Possibly use set for VP reference
 void ViewpointReduction::removeRedundantVPs(StateVector * VP)
 {
@@ -193,7 +176,7 @@ void ViewpointReduction::removeRedundantVPs(StateVector * VP)
 		bool isPartOfSet = false;
 		for(int j=0; j<this->viewpoints_kept.size(); j++)
 		{
-			if(this->viewpoints_kept.at(j) == iter) 
+			if(this->viewpoints_kept.at(j).getVPNum() == iter) 
 			{
 				isPartOfSet = true;
 			}
@@ -233,7 +216,6 @@ void ViewpointReduction::exportMatlabData(std::string fname, StateVector *VP, in
   for(int i = 0; i < this->visMat.cols(); i++)
   {
     //Triangle-Counter, rows
-    //TO-DO: Use iterator
     for (int j = 0; j < (this->visMat.rows()); j++)
     {
       plannerLog << (int)this->visMat(j,i) << ",\t"; //row,col
@@ -256,6 +238,33 @@ void ViewpointReduction::exportMatlabData(std::string fname, StateVector *VP, in
   }
   plannerLog << "];\n";
   plannerLog.close();
+}
+
+VisibilityContainer::~VisibilityContainer()
+{
+  this->triangle_vector.clear();  //TO-DO: Probably not neccesary
+}
+
+void VisibilityContainer::set(int vp_num, StateVector *VP, std::vector<tri_t*> tri)
+{
+  this->vp_number = vp_num;
+  this->view_point = *VP;
+  this->triangle_vector = tri;
+}
+
+int VisibilityContainer::getVPNum()
+{
+  return this->vp_number;
+}
+
+StateVector* VisibilityContainer::getVP()
+{
+  return &this->view_point;
+}
+
+std::vector<tri_t*> VisibilityContainer::getTriVect()
+{
+  return this->triangle_vector;
 }
 
 //Convenience functions to remove rows/columns from Eigen-Matrix

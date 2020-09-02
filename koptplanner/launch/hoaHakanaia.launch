@@ -3,6 +3,6 @@
 	    <rosparam file="$(find koptplanner)/hoaHakanaiaParam.yaml"/>
     </node>
     <node name="request" pkg="request" type="hoaHakanaia"> </node>
-    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find rviz)/structuralInspectionPlanner.rviz" />
+    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find koptplanner)/launch/structuralInspectionPlanner.rviz" />
 </launch>
 

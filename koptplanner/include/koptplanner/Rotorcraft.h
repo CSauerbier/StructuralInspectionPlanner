@@ -10,6 +10,8 @@
 #include "koptplanner/plan.hpp"
 #include "planner_rrts/system_holonomic.h"
 #include "koptplanner/TriangleObject.h"
+//TO-DO: Clean up includes
+//#include "Visualization/Visualization.h"
 
 #include <eigen3/Eigen/Dense>
 

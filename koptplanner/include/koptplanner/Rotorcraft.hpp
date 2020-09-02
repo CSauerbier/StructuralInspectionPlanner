@@ -18,6 +18,7 @@
 #include "tf/tf.h"
 #include <ros/package.h>
 #include <fstream>
+#include "Visualization/Visualization.h"
 
 #define X_MIN (problemBoundary.center[0]-problemBoundary.size[0]/2)
 #define Y_MIN (problemBoundary.center[1]-problemBoundary.size[1]/2)
@@ -472,6 +473,8 @@ Vector_t Rotorcraft::Triangle<System_t, State_t, Vector_t, region_t>::dualBarrie
       plannerLog << "   x2: (" << this->x2[0] << ", " << this->x2[1] << ", " << this->x2[2] << ")\n";
       plannerLog << "   x3: (" << this->x3[0] << ", " << this->x3[1] << ", " << this->x3[2] << ")\n";
       plannerLog.close();
+
+      Singleton<FacetVisualization>().push_back(this);
     }
     //koptError = VIEWPOINT_INFEASIBILITY;  //TO-DO: REVERT
   }

@@ -14,14 +14,32 @@
 #include <sstream>
 #include <vector>
 
+class VisibilityContainer
+{
+private:
+  int vp_number;
+  StateVector view_point;
+  std::vector<tri_t*> triangle_vector;
+public:
+  ~VisibilityContainer();
+
+  void set(int vp_num, StateVector *VP, std::vector<tri_t*> tri);
+  int getVPNum();
+  StateVector* getVP();
+  std::vector<tri_t*> getTriVect();
+};
+
+
 class ViewpointReduction
 {
 private:
   Eigen::Array<bool, Dynamic, Dynamic> visMat;  //Data-Structure to store visibility matrix
   std::vector<int> sumsOfTriangles;
   int vpCount;
-  std::vector<int> viewpoints_kept;             //Viewpoints that are kept as a minimum set
+  std::vector<VisibilityContainer> viewpoints_kept;             //Viewpoints that are kept as a minimum set
   int iteration;
+  std::vector<tri_t *> triangles;
+  StateVector * view_points;
 public:
   ViewpointReduction(int);
 
@@ -30,7 +48,7 @@ public:
   Eigen::Array<bool,Dynamic,Dynamic> getVisMat();
   std::vector<int> getSumOfTriangles();
   int getNoOfUniqueVPs();
-  std::vector<int> getVPsKept();
+  std::vector<VisibilityContainer> getVPsKept();
   void solveSetCoveringProbGreedy();
   void removeRedundantVPs(StateVector * VP);
   void exportMatlabData(std::string fname, StateVector * VP, int noOfVPs);

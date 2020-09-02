@@ -34,6 +34,7 @@
 
 #include "ViewpointReduction/ViewpointReduction.h"
 #include "ViewpointReduction.cpp"
+#include "Visualization.cpp"
 //TO-DO: Do not include cpp file
 
 #ifdef __TIMING_INFO__
@@ -531,48 +532,24 @@ bool plan(koptplanner::inspection::Request  &req,
       s1 = NULL;
       delete s2;
       s2 = NULL;
-
     }
+
+    //Singleton<FacetVisualization>().visualizeTriangles();
     //TO-DO: Check if dynamic allocation is neccesary due to memory consumption
     ViewpointReduction vpRed (maxID);
     vpRed.generateVisibilityMatrix(tri, VP);
     maxID = vpRed.getNoOfUniqueVPs();
 
-    for(int i=0; i<maxID; i++)
+    //TO-DO: Sleep as parameter for manual sequential inspection
+    ros::Rate delayRate(0.5);
+    std::vector<VisibilityContainer> temp_vc = vpRed.getVPsKept();
+    for (int i=0; i<temp_vc.size(); i++)
     {
-      ros::Rate delayRate(50.0);
-      /* display sampled viewpoint in rviz */
-      visualization_msgs::Marker point;
-      point.header.frame_id = "/kopt_frame";
-      point.header.stamp = ros::Time::now();
-      point.id = i;
-      point.ns = "Viewpoints";
-      point.type = visualization_msgs::Marker::ARROW;
-      point.pose.position.x = VP[i][0];
-      point.pose.position.y = VP[i][1];
-      point.pose.position.z = VP[i][2];
-
-      #if DIMENSIONALITY>4
-      tf::Quaternion q = tf::createQuaternionFromRPY(VP[i][3],VP[i][4],VP[i][5]);
-      #else
-      tf::Quaternion q = tf::createQuaternionFromRPY(0,VP[i][4],VP[i][3]);
-      #endif
-      point.pose.orientation.x = q.x();
-      point.pose.orientation.y = q.y();
-      point.pose.orientation.z = q.z();
-      point.pose.orientation.w = q.w();
-
-      double scaleVP = sqrt(SQ(problemBoundary.size[0])+SQ(problemBoundary.size[1])+SQ(problemBoundary.size[2]))/70.0;
-      point.scale.x = scaleVP;
-      point.scale.y = scaleVP/25.0;
-      point.scale.z = scaleVP/25.0;
-      point.color.r = 0.8f;
-      point.color.g = 0.5f;
-      point.color.b = 0.0f;
-      point.color.a = 0.7;
-      point.lifetime = ros::Duration();
-      viewpoint_pub.publish(point);
+      Singleton<CameraVisualization>().visualizeCameras(temp_vc.at(i).getVP());
       delayRate.sleep();
+      Singleton<FacetVisualization>().visualizeTriangles(temp_vc.at(i).getTriVect());
+      delayRate.sleep();      
+
     }
 
     tri_t::initialized = true;
@@ -725,7 +702,7 @@ int main(int argc, char **argv)
   ReadPenaltiesStatic = 0;
 
   marker_pub = n.advertise<nav_msgs::Path>("visualization_marker", 1);
-  viewpoint_pub = n.advertise<visualization_msgs::Marker>("viewpoint_marker", 1);
+  viewpoint_pub = n.advertise<visualization_msgs::Marker>("viewpoint_marker", 1); //TO-DO: Remove
 
   ros::ServiceServer service = n.advertiseService("inspectionPath", plan);
   ROS_INFO("Service started");
