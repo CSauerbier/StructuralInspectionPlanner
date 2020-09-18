@@ -100,12 +100,11 @@ int main(int argc, char **argv)
   }
 
   /* read in simplified coarse mesh for preprocessing*/
-  mesh->clear();
-  mesh = readSTLfile(ros::package::getPath("request")+"/meshes/BigBen_coarse.stl");
-  if(mesh != NULL)
+  std::vector<nav_msgs::Path> *mesh2 = readSTLfile(ros::package::getPath("request")+"/meshes/BigBen_coarse.stl");
+  if(mesh2 != NULL)
   {
-    ROS_INFO("mesh size = %i", (int)mesh->size());
-    for(std::vector<nav_msgs::Path>::iterator it = mesh->begin(); it != mesh->end() && ros::ok(); it++)
+    ROS_INFO("mesh size = %i", (int)mesh2->size());
+    for(std::vector<nav_msgs::Path>::iterator it = mesh2->begin(); it != mesh2->end() && ros::ok(); it++)
     {
       // stl_pub.publish(*it);
       geometry_msgs::Polygon p;
