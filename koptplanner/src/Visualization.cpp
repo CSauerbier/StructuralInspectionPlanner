@@ -1,7 +1,8 @@
 
 
 #include "Visualization/Visualization.h"
-#include "Colors.hpp"
+#include "Visualization/Colors.h"
+#include "tf/tf.h"
 
 int Visualization::s_publishing_number = 0;
 
@@ -16,7 +17,6 @@ Visualization::~Visualization()
 
 Visualization& Visualization::instance()
 {
-  //TO-DO: make _instance class member?
   static Visualization _instance;
   return _instance;
 }
@@ -45,7 +45,7 @@ void FacetVisualization::visualizeTriangles(std::vector<tri_t*> tri)
 
     visualization_msgs::MarkerArray marker_array;
     visualization_msgs::Marker marker;
-    marker.header.frame_id = "/kopt_frame";
+    marker.header.frame_id = "kopt_frame";
     marker.header.stamp = ros::Time::now();
     marker.ns = "triangle_list";
     marker.action = visualization_msgs::Marker::ADD;
@@ -78,7 +78,7 @@ void FacetVisualization::visualizeTriangles(std::vector<tri_t*> tri)
       marker.points.push_back(p);
 
 
-      marker.id = i + (s_publishing_number)*3000; //TO-DO: Improve. Create an unique ID for each facet
+      marker.id = i + (s_publishing_number)*10000; //TO-DO: Improve. Create an unique ID for each facet
 
       marker_array.markers.push_back(marker);
       marker.points.clear();
@@ -101,7 +101,7 @@ void CameraVisualization::visualizeCameras(StateVector *view_point)
 
   /* display sampled viewpoint in rviz */
   visualization_msgs::Marker point;
-  point.header.frame_id = "/kopt_frame";
+  point.header.frame_id = "kopt_frame"; //TO-DO: Check backward compatibility to lower ROS distros than noetic
   point.header.stamp = ros::Time::now();
   point.id = s_publishing_number;
   point.ns = "Viewpoints";
@@ -120,8 +120,9 @@ void CameraVisualization::visualizeCameras(StateVector *view_point)
   point.pose.orientation.z = q.z();
   point.pose.orientation.w = q.w();
 
-  double scaleVP = sqrt(SQ(problemBoundary.size[0])+SQ(problemBoundary.size[1])+SQ(problemBoundary.size[2]))/70.0;
-  point.scale.x = 2*scaleVP;    //TO-DO: Remove 
+  //sqrt(SQ(problemBoundary.size[0])+SQ(problemBoundary.size[1])+SQ(problemBoundary.size[2]))/70.0; //TO-DO: Introduce parameter
+  double scaleVP = 1.0;
+  point.scale.x = 2*scaleVP;
   point.scale.y = scaleVP/10.0;
   point.scale.z = scaleVP/10.0;
   point.color.r = ColorRGB::getCurrent().r;

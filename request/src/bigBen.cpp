@@ -73,14 +73,14 @@ int main(int argc, char **argv)
   srv.request.minDist = 10.0;
   srv.request.maxDist = 50.0;
   srv.request.numIterations = 1;
-  //TO-DO: Introduce ROS-Parameter for this
+  //TO-DO: Remove iterations
 
   /* read STL file and publish to rviz */
   std::vector<nav_msgs::Path> * mesh = readSTLfile(ros::package::getPath("request")+"/meshes/BigBen.stl");
   ROS_INFO("mesh size = %i", (int)mesh->size());
   for(std::vector<nav_msgs::Path>::iterator it = mesh->begin(); it != mesh->end() && ros::ok(); it++)
   {
-    stl_pub.publish(*it);
+    // stl_pub.publish(*it);
     geometry_msgs::Polygon p;
     geometry_msgs::Point32 p32;
     p32.x = it->poses[0].pose.position.x;
@@ -96,7 +96,35 @@ int main(int argc, char **argv)
     p32.z = it->poses[2].pose.position.z;
     p.points.push_back(p32);
     srv.request.inspectionArea.push_back(p);
-    r.sleep();
+    // r.sleep();
+  }
+
+  /* read in simplified coarse mesh for preprocessing*/
+  mesh->clear();
+  mesh = readSTLfile(ros::package::getPath("request")+"/meshes/BigBen_coarse.stl");
+  if(mesh != NULL)
+  {
+    ROS_INFO("mesh size = %i", (int)mesh->size());
+    for(std::vector<nav_msgs::Path>::iterator it = mesh->begin(); it != mesh->end() && ros::ok(); it++)
+    {
+      // stl_pub.publish(*it);
+      geometry_msgs::Polygon p;
+      geometry_msgs::Point32 p32;
+      p32.x = it->poses[0].pose.position.x;
+      p32.y = it->poses[0].pose.position.y;
+      p32.z = it->poses[0].pose.position.z;
+      p.points.push_back(p32);
+      p32.x = it->poses[1].pose.position.x;
+      p32.y = it->poses[1].pose.position.y;
+      p32.z = it->poses[1].pose.position.z;
+      p.points.push_back(p32);
+      p32.x = it->poses[2].pose.position.x;
+      p32.y = it->poses[2].pose.position.y;
+      p32.z = it->poses[2].pose.position.z;
+      p.points.push_back(p32);
+      srv.request.inspectionAreaCoarse.push_back(p);
+      // r.sleep();
+    }
   }
 
   if (client.call(srv))
@@ -160,7 +188,8 @@ std::vector<nav_msgs::Path> * readSTLfile(std::string name)
   std::vector<nav_msgs::Path> * mesh = new std::vector<nav_msgs::Path>;
   std::fstream f;
   f.open(name.c_str());
-  assert(f.is_open());
+  // assert(f.is_open());
+  if (!f.is_open()) return NULL;
   int MaxLine = 0;
   char* line;
   double maxX = -DBL_MAX;
@@ -191,7 +220,7 @@ std::vector<nav_msgs::Path> * readSTLfile(std::string name)
       if(line[q] == 'v')
       {
         const double yawTrafo = 0.0;      // used to rotate the mesh before processing
-        const double scaleFactor = 2.0;   // used to scale the mesh before processing
+        const double scaleFactor = 5.0;   // used to scale the mesh before processing
         const double offsetX = 0.0;       // used to offset the mesh before processing
         const double offsetY = 0.0;       // used to offset the mesh before processing
         const double offsetZ = 0.0;       // used to offset the mesh before processing
@@ -233,7 +262,7 @@ std::vector<nav_msgs::Path> * readSTLfile(std::string name)
       f.getline(line, MaxLine);
     }
     p.poses.push_back(v1);
-    p.header.frame_id = "/kopt_frame";
+    p.header.frame_id = "kopt_frame";
     p.header.stamp = ros::Time::now();
     p.header.seq = k;
     mesh->push_back(p);

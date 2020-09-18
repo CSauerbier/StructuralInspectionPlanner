@@ -25,8 +25,6 @@ namespace ColorsRGB
                     Purple    (0.4940,  0.1840, 0.5560),
                     Green     (0.4660,  0.6740, 0.1880),
                     LightBlue (0.3010,  0.7450, 0.9330),
-                    DarkRed   (0.6350,  0.0780, 0.1840),
-                    Black     (0.0,     0.0,    0.0),
                     White     (1.0,     1.0,    1.0),
                     Lime      (0.0,     1.0,    0.0),
                     Blue      (0.0,     0.0,    1.0),
@@ -39,9 +37,12 @@ namespace ColorsRGB
                     Olive     (0.5,     0.5,    0),
                     Teal      (0,       0.5,    0.5),
                     Navy      (0.0,     0.0,    0.5);
+                    //Black     (0.0,     0.0,    0.0),
+                    //DarkRed   (0.6350,  0.0780, 0.1840);
+                    
 
 
-    const ColorRGB color_arr[] = {DarkBlue, Orange, DarkYellow, Purple, Green, LightBlue, DarkRed, Black, White, Lime, Blue, Yellow, Cyan, Magenta, Silver, Gray, Maroon, Olive, Teal, Navy};
+    const ColorRGB color_arr[] = {DarkBlue, Orange, DarkYellow, Purple, Green, LightBlue, White, Lime, Blue, Yellow, Cyan, Magenta, Silver, Gray, Maroon, Olive, Teal, Navy};
     int temp = ColorRGB::init();//TO-DO: Why does this not work with void. Bad style
 };
 

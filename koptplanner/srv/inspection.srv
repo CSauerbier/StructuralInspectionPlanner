@@ -4,6 +4,7 @@ float64[] spaceSize
 int32[] obstacleIntransparancy
 geometry_msgs/Pose[] requiredPoses
 geometry_msgs/Polygon[] inspectionArea
+geometry_msgs/Polygon[] inspectionAreaCoarse
 shape_msgs/SolidPrimitive[] obstacles
 geometry_msgs/Pose[] obstaclesPoses
 

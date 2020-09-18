@@ -54,15 +54,6 @@ void ViewpointReduction::generateVisibilityMatrix(std::vector<tri_t*> tri, State
 
   this->solveSetCoveringProbGreedy();
 
-  this->removeRedundantVPs(VP);
-  
-  #ifdef GENERATE_MATLAB_FILE
-  if(this->iteration == 0)
-  {
-    this->exportMatlabData("VisibilityMatrix_afterReduction", VP, this->viewpoints_kept.size());
-  }
-  #endif
-
   this->iteration ++;
 }
 
@@ -96,9 +87,14 @@ std::vector<VisibilityContainer> ViewpointReduction::getVPsKept()
   return this->viewpoints_kept;
 }
 
+std::vector<tri_t *> ViewpointReduction::getUncoveredTriangles()
+{
+  return this->uncovered_triangles;
+}
+
 void ViewpointReduction::solveSetCoveringProbGreedy()
 {
-  std::vector<bool> triangleCovered(this->visMat.cols(), false);    //to keep track whether or not the facet seen by some VP
+  std::vector<bool> triangleCovered(this->visMat.rows(), false);    //to keep track whether or not the facet seen by some VP
   
   bool allTrisCovered;  //TO-DO: Only keep one of these
   int no_uncovered_tris = 0;
@@ -114,6 +110,13 @@ void ViewpointReduction::solveSetCoveringProbGreedy()
     maxVisibleElementIndex = std::max_element(this->sumsOfTriangles.begin(),this->sumsOfTriangles.end()) - this->sumsOfTriangles.begin();
     if (oldIndex == maxVisibleElementIndex)
     {
+      for(int i=0; i<triangleCovered.size(); i++)
+      {
+        if(triangleCovered.at(i) == false) 
+        {
+          this->uncovered_triangles.push_back(this->triangles.at(i));
+        }
+      }
       ROS_INFO("Viewpoint Reduction no longer converging at iteration %i, %i uncovered facets", itn, no_uncovered_tris);
       break;
     } 
@@ -242,7 +245,6 @@ void ViewpointReduction::exportMatlabData(std::string fname, StateVector *VP, in
 
 VisibilityContainer::~VisibilityContainer()
 {
-  this->triangle_vector.clear();  //TO-DO: Probably not neccesary
 }
 
 void VisibilityContainer::set(int vp_num, StateVector *VP, std::vector<tri_t*> tri)

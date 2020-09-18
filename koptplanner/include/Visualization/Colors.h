@@ -1,9 +1,11 @@
 #pragma once
 
+#include <cstdlib> 
+
 class ColorRGB
 {
 private:
-  const static int s_max_id = 19;
+  const static int s_max_id = 17;
   static ColorRGB s_current_color;
   static int s_current_id;
 

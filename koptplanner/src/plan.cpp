@@ -33,9 +33,6 @@
 #include <ros/package.h>
 
 #include "ViewpointReduction/ViewpointReduction.h"
-#include "ViewpointReduction.cpp"
-#include "Visualization.cpp"
-//TO-DO: Do not include cpp file
 
 #ifdef __TIMING_INFO__
  long time_DBS;
@@ -261,6 +258,7 @@ bool plan(koptplanner::inspection::Request  &req,
 
   tri_t::setCamBoundNormals();
   std::vector<tri_t*> tri;
+  std::vector<tri_t*> tri_coarse; //Data structure for simplified mesh
   tri_t::setParam(req.incidenceAngle, req.minDist, req.maxDist); // incidence angle from surface plane
   
   /* startpoint and further strictly required positions */
@@ -359,6 +357,51 @@ bool plan(koptplanner::inspection::Request  &req,
       tri.push_back(tmp);
     }
   }
+  /* simplified mesh */
+  if (!req.inspectionAreaCoarse.empty())
+  {
+    for(std::vector<geometry_msgs::Polygon>::iterator it = req.inspectionAreaCoarse.begin(); it != req.inspectionAreaCoarse.end(); it++)
+    {
+      tri_t* tmp = new tri_t;
+      tmp->x1[0] = (*it).points[0].x;
+      tmp->x1[1] = (*it).points[0].y;
+      tmp->x1[2] = (*it).points[0].z;
+
+      tmp->x2[0] = (*it).points[1].x;
+      tmp->x2[1] = (*it).points[1].y;
+      tmp->x2[2] = (*it).points[1].z;
+
+      tmp->x3[0] = (*it).points[2].x;
+      tmp->x3[1] = (*it).points[2].y;
+      tmp->x3[2] = (*it).points[2].z;
+
+      Vector3f a = ((tmp->x2-tmp->x1).cross(tmp->x3-tmp->x2))/2;
+
+      if(a.norm() == 0.0)
+      {
+        std::string pkgPath = ros::package::getPath("koptplanner");
+        std::fstream plannerLog;
+        plannerLog.open((pkgPath+"/data/report.log").c_str(), std::ios::app | std::ios::out);
+        if(!plannerLog.is_open())
+          ROS_ERROR("Could not open report.log");
+        plannerLog << "-->Triangle does not have any area. Normal can not be computed. Omitting!\n";
+        plannerLog << "   x1: (" << tmp->x1[0] << ", " << tmp->x1[1] << ", " << tmp->x1[2] << ")\n";
+        plannerLog << "   x2: (" << tmp->x2[0] << ", " << tmp->x2[1] << ", " << tmp->x2[2] << ")\n";
+        plannerLog << "   x3: (" << tmp->x3[0] << ", " << tmp->x3[1] << ", " << tmp->x3[2] << ")\n";
+        plannerLog.close();
+      }
+      else
+      {
+        tmp->init();    //TO-DO: modify init function
+        tri_coarse.push_back(tmp);
+      }
+    }
+  }
+  else
+  {
+    tri_coarse = tri;
+  }
+  
   /* end point */
   if(req.requiredPoses.size()>1 && // selecting the same start and end point causes the LKH to fail
       ((req.requiredPoses.end()-1)->position.x != req.requiredPoses[0].position.x ||
@@ -388,7 +431,7 @@ bool plan(koptplanner::inspection::Request  &req,
     tmp->x2[2] = yaw_angle;
 #endif
     tmp->Fixpoint = true;
-    tri.push_back(tmp);
+    tri.push_back(tmp); //TO-DO: Does the other vector need these entries too?
   }
   
   std::fstream file;
@@ -404,15 +447,16 @@ bool plan(koptplanner::inspection::Request  &req,
   }
 
   maxID = tri.size();
-  if(maxID<4)
+  int maxID_coarse = tri_coarse.size();
+  if(maxID<4 || maxID_coarse<4)
   {
-    ROS_ERROR("Too few inspection areas specified. A minium number of 4 is required, where only %i are given.", maxID);
+    ROS_ERROR("Too few inspection areas specified. A minium number of 4 is required, where only %i/%i are given.", maxID, maxID_coarse);
     std::string pkgPath = ros::package::getPath("koptplanner");
     std::fstream plannerLog;
     plannerLog.open((pkgPath+"/data/report.log").c_str(), std::ios::app | std::ios::out);
     if(!plannerLog.is_open())
       ROS_ERROR("Could not open report.log");
-    plannerLog << "-->Too few inspection areas specified. A minium number of 4 is required, where only " << maxID << " are given.\n";
+    plannerLog << "-->Too few inspection areas specified. A minium number of 4 is required, where only " << maxID << "/" << maxID_coarse << " are given.\n";
     plannerLog.close();
     koptError = TOO_FEW_INSPECTION_AREAS;
     return true;
@@ -436,7 +480,7 @@ bool plan(koptplanner::inspection::Request  &req,
     }
   }
 #else
-  VP = new StateVector[maxID];
+  VP = new StateVector[tri_coarse.size()+tri.size()];
 #endif
   if(reinitRRTs==NULL)
     reinitRRTs = new int[maxID];
@@ -456,7 +500,7 @@ bool plan(koptplanner::inspection::Request  &req,
     plannerLog.close();
 
     /* -------- ART -- GALLERY -------- */
-    for(int i = 0; i < maxID; i++)
+    for(int i = 0; i < maxID_coarse; i++)
     {
       StateVector * s1 = NULL;
       StateVector * s2 = NULL;
@@ -466,14 +510,14 @@ bool plan(koptplanner::inspection::Request  &req,
         s1 = new StateVector;
         s2 = new StateVector;
         int kpred = 0;
-        while(kpred<maxID-1&&PTPPlanner::Tour_[kpred]-1!=i)
+        while(kpred<maxID_coarse-1&&PTPPlanner::Tour_[kpred]-1!=i)
           kpred++;
         int ksucc = kpred;
         if(kpred<=0)
         {
-          kpred=maxID-1;
+          kpred=maxID_coarse-1;
         }
-        else if(kpred>=maxID-1)
+        else if(kpred>=maxID_coarse-1)
         {
           ksucc=0;
         }
@@ -484,43 +528,43 @@ bool plan(koptplanner::inspection::Request  &req,
         }
         int Npred = PTPPlanner::Tour_[kpred]-1;
         int Nsucc = PTPPlanner::Tour_[ksucc]-1;
-        assert(Npred<=maxID);
-        assert(Nsucc<=maxID);
-        *s1 = plannerArray[Npred]->rrts_.getLastVisible(plannerArray[i]->stateVec, tri[i]);
+        assert(Npred<=maxID_coarse);
+        assert(Nsucc<=maxID_coarse);
+        *s1 = plannerArray[Npred]->rrts_.getLastVisible(plannerArray[i]->stateVec, tri_coarse[i]);
 #ifndef USE_FIXEDWING_MODEL
         int lim = 0;
         double smoothing_param = std::min(req.numIterations/2,25);
         double neighbour_steps = std::min(2.0, 1.0+50.0/req.numIterations);
-        int maxWidth = (int)std::min(neighbour_steps*(double)(req.numIterations-smoothing_param-koptPlannerIteration), (double)(maxID)/2.0);
+        int maxWidth = (int)std::min(neighbour_steps*(double)(req.numIterations-smoothing_param-koptPlannerIteration), (double)(maxID_coarse)/2.0);
 
         while((*s1)[0] == plannerArray[Npred]->stateVec[0] && (*s1)[1] == plannerArray[Npred]->stateVec[1] && (*s1)[2] == plannerArray[Npred]->stateVec[2] && (lim++)<maxWidth)
         {
           if(kpred == 0)
-            kpred = maxID-1;
+            kpred = maxID_coarse-1;
           else
             kpred--;
           int NpredOld = Npred;
           Npred = PTPPlanner::Tour_[kpred]-1;
-          *s1 = plannerArray[Npred]->rrts_.getLastVisible(plannerArray[NpredOld]->stateVec, tri[i]);
+          *s1 = plannerArray[Npred]->rrts_.getLastVisible(plannerArray[NpredOld]->stateVec, tri_coarse[i]);
         }
 #endif
-        *s2 = plannerArray[Nsucc]->rrts_.getLastVisible(plannerArray[i]->stateVec, tri[i]);
+        *s2 = plannerArray[Nsucc]->rrts_.getLastVisible(plannerArray[i]->stateVec, tri_coarse[i]);
 #ifndef USE_FIXEDWING_MODEL
         lim = 0;
         while((*s2)[0] == plannerArray[Nsucc]->stateVec[0] && (*s2)[1] == plannerArray[Nsucc]->stateVec[1] && (*s2)[2] == plannerArray[Nsucc]->stateVec[2] && (lim++)<maxWidth)
         {
-          if(ksucc == maxID-1)
+          if(ksucc == maxID_coarse-1)
             ksucc = 0;
           else
             ksucc++;
           int NsuccOld = Nsucc;
           Nsucc = PTPPlanner::Tour_[ksucc]-1;
-          *s2 = plannerArray[Nsucc]->rrts_.getLastVisible(plannerArray[NsuccOld]->stateVec, tri[i]);
+          *s2 = plannerArray[Nsucc]->rrts_.getLastVisible(plannerArray[NsuccOld]->stateVec, tri_coarse[i]);
         }
 #endif
       }
       /* sample viewpoint */
-      StateVector VPtmp = tri[i]->dualBarrierSampling(s1,s2,&VP[i]);
+      StateVector VPtmp = tri_coarse[i]->dualBarrierSampling(s1,s2,&VP[i]);
       if(koptPlannerIteration == 0 || vp_tol<(VPtmp - VP[i]).norm())
       {
         VP[i] = VPtmp;
@@ -534,15 +578,55 @@ bool plan(koptplanner::inspection::Request  &req,
       s2 = NULL;
     }
 
-    //Singleton<FacetVisualization>().visualizeTriangles();
+    // Singleton<FacetVisualization>().visualizeTriangles(); //TO-DO: Displays uncovered facets
     //TO-DO: Check if dynamic allocation is neccesary due to memory consumption
-    ViewpointReduction vpRed (maxID);
-    vpRed.generateVisibilityMatrix(tri, VP);
-    maxID = vpRed.getNoOfUniqueVPs();
+    //Remove redundant VPs for coarse mesh
+    ViewpointReduction vpRedCoarse (maxID_coarse);
+    vpRedCoarse.generateVisibilityMatrix(tri_coarse, VP);
+    vpRedCoarse.removeRedundantVPs(VP);
+
+    //Check how the sampled VPs perform on the full mesh
+    ViewpointReduction vpRedFine(vpRedCoarse.getNoOfUniqueVPs());
+    vpRedFine.generateVisibilityMatrix(tri, VP);
+
+
+    // ros::Rate delayRate(2);
+    // std::vector<VisibilityContainer> temp_vc = vpRedFine.getVPsKept();
+    // for (int i=0; i<temp_vc.size(); i++)
+    // {
+    //   Singleton<CameraVisualization>().visualizeCameras(temp_vc.at(i).getVP());
+    //   delayRate.sleep();
+    //   Singleton<FacetVisualization>().visualizeTriangles(temp_vc.at(i).getTriVect());
+    //   delayRate.sleep();      
+
+    // }
+
+    /*  Perform VP-Sampling for those facets that are not visible from the VPs sampled on the coarse mesh*/
+    std::vector<tri_t*> tri_uncovered = vpRedFine.getUncoveredTriangles();
+
+    int maxID_uncovered = tri_uncovered.size();
+    int vp_index = vpRedCoarse.getVPsKept().size() + 1; //TO-DO: Introduce this variable earlier and use throughout
+    
+        /* -------- ART -- GALLERY -------- */
+    for(int i = 0; i < maxID_uncovered; i++)
+    {
+      //Save VPs behind those from previous sampling
+      VP[vp_index] = tri_uncovered[i]->dualBarrierSampling(NULL,NULL,&VP[i+maxID_uncovered]);
+      reinitRRTs[i] = 1; // delete (if existing) and reinitialize rrt* tree
+      vp_index++;
+    }
+
+    /*  From combined set of VPs, choose most efficient configuration  */
+
+    ViewpointReduction vpRedCombined (vp_index);
+    vpRedCombined.generateVisibilityMatrix(tri, VP);
+    vpRedCombined.removeRedundantVPs(VP);
 
     //TO-DO: Sleep as parameter for manual sequential inspection
-    ros::Rate delayRate(0.5);
-    std::vector<VisibilityContainer> temp_vc = vpRed.getVPsKept();
+    /*  VISUALIZATION     */
+    ros::Rate delayRate(10);
+    std::vector<VisibilityContainer> temp_vc = vpRedCombined.getVPsKept();
+    ROS_INFO("No. of VPs overall: %li", temp_vc.size()); //TO-DO: Clean up
     for (int i=0; i<temp_vc.size(); i++)
     {
       Singleton<CameraVisualization>().visualizeCameras(temp_vc.at(i).getVP());
@@ -560,8 +644,8 @@ bool plan(koptplanner::inspection::Request  &req,
       return koptError == SUCCESSFUL;
     }
     /* ------------- TSP -------------- */
-    double ** vals = new double* [maxID];
-    for(int i = 0; i<maxID; i++)
+    double ** vals = new double* [vp_index];
+    for(int i = 0; i<vp_index; i++)
     {
       vals[i] = new double[3];
       vals[i][0] = VP[i][0]*g_scale;
@@ -588,7 +672,7 @@ bool plan(koptplanner::inspection::Request  &req,
     prob += "TYPE:TSP\n";
     prob += "EDGE_WEIGHT_TYPE:RRT_3D\n";
 #endif
-    std::stringstream ss; ss<<maxID;
+    std::stringstream ss; ss<<vp_index;
     prob += "DIMENSION:"+ss.str()+"\n";
     if(endPoint)
       prob += "FIXED_EDGES_SECTION\n"+ss.str()+" 1\n-1\n";
@@ -608,12 +692,12 @@ bool plan(koptplanner::inspection::Request  &req,
     assert(pro = (char*) malloc(length+10));
     strcpy(pro, prob.c_str());
     /* call TSP solver */
-    LKHmainFunction(maxID,vals,par,pro);
+    LKHmainFunction(vp_index,vals,par,pro);
 #ifdef __TIMING_INFO__
     gettimeofday(&time, NULL);
     time_LKH += time.tv_sec * 1000000 + time.tv_usec;
 #endif
-    for(int i = 0; i<maxID; i++)
+    for(int i = 0; i<vp_index; i++)
     {
       delete[] vals[i];
     }

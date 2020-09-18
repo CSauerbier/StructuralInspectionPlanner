@@ -437,7 +437,9 @@ Vector_t Rotorcraft::Triangle<System_t, State_t, Vector_t, region_t>::dualBarrie
     time_DBS += time.tv_sec * 1000000 + time.tv_usec;
 #endif
     if(this->initialized)
+    {
       return (*statePrev);
+    }
     else
     {
       std::string pkgPath = ros::package::getPath("koptplanner");
@@ -451,7 +453,6 @@ Vector_t Rotorcraft::Triangle<System_t, State_t, Vector_t, region_t>::dualBarrie
       plannerLog << "   x3: (" << this->x3[0] << ", " << this->x3[1] << ", " << this->x3[2] << ")\n";
       plannerLog.close();
     }
-    koptError = VIEWPOINT_INFEASIBILITY;
   }
   if(!orSolFound)
   {
@@ -476,7 +477,7 @@ Vector_t Rotorcraft::Triangle<System_t, State_t, Vector_t, region_t>::dualBarrie
 
       Singleton<FacetVisualization>().push_back(this);
     }
-    //koptError = VIEWPOINT_INFEASIBILITY;  //TO-DO: REVERT
+    //koptError = VIEWPOINT_INFEASIBILITY;  //TO-DO: This should not be triggered, because all headings are allowed, but it is
   }
   for(int i = 0; i<4; i++)
     assert(best[i]<1e15&& best[i]>-1e15);

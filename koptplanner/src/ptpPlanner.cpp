@@ -717,7 +717,7 @@ int cplusplus_callback_publish(int* Tour, int Dim, GainType Cost)
       tempPose.pose.orientation.w = q.w();
       tempPose.header.stamp = ros::Time::now();
       tempPose.header.seq = k;
-      tempPose.header.frame_id = "/kopt_frame";
+      tempPose.header.frame_id = "kopt_frame";
       res_g->inspectionPath.poses.push_back(tempPose);
 
       k++;
@@ -729,7 +729,7 @@ int cplusplus_callback_publish(int* Tour, int Dim, GainType Cost)
   }
   res_g->inspectionPath.header.stamp = ros::Time::now();
   res_g->inspectionPath.header.seq = 1;
-  res_g->inspectionPath.header.frame_id = "/kopt_frame";
+  res_g->inspectionPath.header.frame_id = "kopt_frame";
   marker_pub.publish(res_g->inspectionPath);
   std::fstream f;
   std::string pathAssemb = ros::package::getPath("koptplanner");

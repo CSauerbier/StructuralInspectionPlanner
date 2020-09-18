@@ -119,7 +119,7 @@ int main(int argc, char **argv)
 
   // publish obstacles for rviz 
   visualization_msgs::Marker marker;
-  marker.header.frame_id = "/kopt_frame";
+  marker.header.frame_id = "kopt_frame";
   marker.header.stamp = ros::Time::now();
   marker.ns = "obstacles";
   marker.id = 0; // enumerate when adding more obstacles
@@ -282,7 +282,7 @@ std::vector<nav_msgs::Path> * readSTLfile(std::string name)
       f.getline(line, MaxLine);
     }
     p.poses.push_back(v1);
-    p.header.frame_id = "/kopt_frame";
+    p.header.frame_id = "kopt_frame";
     p.header.stamp = ros::Time::now();
     p.header.seq = k;
     mesh->push_back(p);

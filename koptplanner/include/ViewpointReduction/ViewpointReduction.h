@@ -1,13 +1,9 @@
 #ifndef __VIEWPOINTREDUCTION_H__
 #define __VIEWPOINTREDUCTION_H__
 
-//TO-DO: add ROS-parameter for this
-// define if a .m output file is to be generated
-// #define GENERATE_MATLAB_FILE
-
 #include "ros/ros.h"
 #include "koptplanner/TriangleObject.h"
-#include "koptplanner/ptpPlanner.hpp" //TO-DO: tidy up include directives
+#include "koptplanner/ptpPlanner.hpp"
 #include <stdlib.h>
 #include <fstream>
 #include <ros/package.h>
@@ -39,6 +35,7 @@ private:
   std::vector<VisibilityContainer> viewpoints_kept;             //Viewpoints that are kept as a minimum set
   int iteration;
   std::vector<tri_t *> triangles;
+  std::vector<tri_t *> uncovered_triangles;
   StateVector * view_points;
 public:
   ViewpointReduction(int);
@@ -49,6 +46,7 @@ public:
   std::vector<int> getSumOfTriangles();
   int getNoOfUniqueVPs();
   std::vector<VisibilityContainer> getVPsKept();
+  std::vector<tri_t *> getUncoveredTriangles();
   void solveSetCoveringProbGreedy();
   void removeRedundantVPs(StateVector * VP);
   void exportMatlabData(std::string fname, StateVector * VP, int noOfVPs);
