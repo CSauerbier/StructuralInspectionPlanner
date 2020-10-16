@@ -9,6 +9,10 @@
 #include <ros/package.h>
 #include <sstream>
 #include <vector>
+#include <unordered_set>
+#include "Culling/OcclusionCulling.h"
+#include "Culling/BackfaceCulling.h"
+#include "Culling/FrustumCulling.h"
 
 class VisibilityContainer
 {

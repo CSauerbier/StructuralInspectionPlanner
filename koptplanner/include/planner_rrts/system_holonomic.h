@@ -9,6 +9,7 @@
 #include "koptplanner/plan.hpp"
 
 #include <list>
+#include <vector>
 
 namespace Holonomic
 {

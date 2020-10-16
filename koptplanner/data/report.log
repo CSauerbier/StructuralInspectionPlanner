@@ -1,20 +1,44 @@
 Inspection path planner version 1.0.0
 Scenario:
-Number of facets:	225
+Number of facets:	10056
 Number of obstacles:	0
-Space center:		(0, 0, 5)
-Space size:		(30, 30, 30)
-Starting point:		(15, 15, -8)
-Final point:		(15, 15, -8)
+Space center:		(0, 0, 12)
+Space size:		(50, 50, 140)
+Starting point:		(25, 25, -55)
+Final point:		(25, 25, -55)
 Angle of incidence:	0.523599rad
-Range:			(4, 8)m
+Range:			(10, 50)m
 Number of iterations:	1
-Linear speed:		0.25m/s
+Linear speed:		1m/s
 Yaw rate:		0.5rad/s
-Field of view [h,v]:	[1.0472, 1.0472]rad
+Field of view [h,v]:	[1.5708, 1.5708]rad
 Camera pitch:		0rad
 
 
 ====================================
 ====== Starting Iteration   0 ======
 ====================================
+-->No feasible heading to inspect triangle:
+   x1: (16.9103, 0.283233, 39.3455)
+   x2: (16.9584, -0.526513, 39.1322)
+   x3: (17.022, -0.196556, 38.6028)
+-->No feasible position to inspect triangle:
+   x1: (16.967, 0.917072, 38.7539)
+   x2: (16.9103, 0.283233, 39.3455)
+   x3: (17.0041, 0.325245, 38.4455)
+-->No feasible heading to inspect triangle:
+   x1: (16.967, 0.917072, 38.7539)
+   x2: (16.9103, 0.283233, 39.3455)
+   x3: (17.0041, 0.325245, 38.4455)
+-->No feasible heading to inspect triangle:
+   x1: (17.022, -0.196556, 38.6028)
+   x2: (17.0041, 0.325245, 38.4455)
+   x3: (16.9103, 0.283233, 39.3455)
+-->No feasible heading to inspect triangle:
+   x1: (16.8563, 0.198019, 37.9129)
+   x2: (16.9009, 0.783656, 38.0318)
+   x3: (17.0041, 0.325245, 38.4455)
+-->No feasible heading to inspect triangle:
+   x1: (16.9584, -0.526513, 39.1322)
+   x2: (16.841, -1.34383, 38.5394)
+   x3: (16.9009, -0.783656, 38.0318)

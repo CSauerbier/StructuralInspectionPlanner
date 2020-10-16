@@ -79,7 +79,6 @@ int main(int argc, char **argv)
   ROS_INFO("mesh size = %i", (int)mesh->size());
   for(std::vector<nav_msgs::Path>::iterator it = mesh->begin(); it != mesh->end() && ros::ok(); it++)
   {
-    stl_pub.publish(*it);
     geometry_msgs::Polygon p;
     geometry_msgs::Point32 p32;
     p32.x = it->poses[0].pose.position.x;
@@ -95,7 +94,6 @@ int main(int argc, char **argv)
     p32.z = it->poses[2].pose.position.z;
     p.points.push_back(p32);
     srv.request.inspectionArea.push_back(p);
-    r.sleep();
   }
 
   if (client.call(srv))

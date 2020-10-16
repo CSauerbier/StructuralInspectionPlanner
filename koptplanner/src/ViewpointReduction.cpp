@@ -2,8 +2,8 @@
 #define __VIEWPOINTREDUCTION_CPP__
 
 #include "ViewpointReduction/ViewpointReduction.h"
-#include "std_msgs/String.h"
-#include <string> 
+#include "Visualization/Visualization.h"    //TO-DO
+#include <vector>
 
 ViewpointReduction::ViewpointReduction(int vpCount)
 {
@@ -18,30 +18,37 @@ ViewpointReduction::ViewpointReduction(int vpCount)
 //TO-DO: LKH Error "DIMENSION < 3 or not specified" occurs when no triangle is visible
 void ViewpointReduction::generateVisibilityMatrix(std::vector<tri_t*> tri, StateVector * VP)
 {
-  this->triangles = tri;  //TO-DO: Consider using Constructor
+  this->triangles = tri;
   this->view_points = VP;
 
   this->visMat.resize(tri.size(),this->vpCount);
   this->visMat.fill(false);
 
-  // tri-Array holds not only mesh, but also fixed, given VPs, that the robot is supposed to hit during the tour. Filter those out
-  // int noOfRequiredVPs = 0;
-  // for (int i = 0; i < tri.size(); i++)
-  // {
-  //   if(tri.at(i)->Fixpoint)
-  //   {
-  //     noOfRequiredVPs++;
-  //   }
-  // }
-
   //Viewpoint-Counter, columns
   for(int i = 0; i < this->vpCount; i++)
   {
+    float progress = (float)i*100/this->vpCount;
+    ROS_INFO("Progress: %.1f%%", progress);
+    std::unordered_set<tri_t*> vis_set(tri.begin(), tri.end());
+
+    vis_set = FrustumCulling::getFacetsWithinFrustum(vis_set, VP[i], true);
+
+    vis_set = BackfaceCulling::getFrontFacets(VP[i], vis_set);
+
+    vis_set = OcclusionCulling::getUnoccludedFacets(VP[i], vis_set, vis_set);
+
+    StateVector vp_tmp = (VP[i]);
     //Triangle-Counter, rows
     for (int j = 0; j < tri.size(); j++)
     {
-      bool isVisible = tri.at(j)->isVisible(VP[i]);
-      this->visMat(j,i) = isVisible;
+      if(vis_set.find(tri.at(j)) != vis_set.end())
+      {
+        this->visMat(j,i) = tri.at(j)->isVisible(VP[i]);
+      }
+      else
+      {
+        this->visMat(j,i) = false;
+      }
     }
   }
 

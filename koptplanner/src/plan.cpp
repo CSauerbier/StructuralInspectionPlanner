@@ -578,8 +578,6 @@ bool plan(koptplanner::inspection::Request  &req,
       s2 = NULL;
     }
 
-    // Singleton<FacetVisualization>().visualizeTriangles(); //TO-DO: Displays uncovered facets
-    //TO-DO: Check if dynamic allocation is neccesary due to memory consumption
     //Remove redundant VPs for coarse mesh
     ViewpointReduction vpRedCoarse (maxID_coarse);
     vpRedCoarse.generateVisibilityMatrix(tri_coarse, VP);
@@ -588,18 +586,6 @@ bool plan(koptplanner::inspection::Request  &req,
     //Check how the sampled VPs perform on the full mesh
     ViewpointReduction vpRedFine(vpRedCoarse.getNoOfUniqueVPs());
     vpRedFine.generateVisibilityMatrix(tri, VP);
-
-
-    // ros::Rate delayRate(2);
-    // std::vector<VisibilityContainer> temp_vc = vpRedFine.getVPsKept();
-    // for (int i=0; i<temp_vc.size(); i++)
-    // {
-    //   Singleton<CameraVisualization>().visualizeCameras(temp_vc.at(i).getVP());
-    //   delayRate.sleep();
-    //   Singleton<FacetVisualization>().visualizeTriangles(temp_vc.at(i).getTriVect());
-    //   delayRate.sleep();      
-
-    // }
 
     /*  Perform VP-Sampling for those facets that are not visible from the VPs sampled on the coarse mesh*/
     std::vector<tri_t*> tri_uncovered = vpRedFine.getUncoveredTriangles();
@@ -624,7 +610,7 @@ bool plan(koptplanner::inspection::Request  &req,
 
     //TO-DO: Sleep as parameter for manual sequential inspection
     /*  VISUALIZATION     */
-    ros::Rate delayRate(10);
+    ros::Rate delayRate(20);
     std::vector<VisibilityContainer> temp_vc = vpRedCombined.getVPsKept();
     ROS_INFO("No. of VPs overall: %li", temp_vc.size()); //TO-DO: Clean up
     for (int i=0; i<temp_vc.size(); i++)
@@ -635,6 +621,8 @@ bool plan(koptplanner::inspection::Request  &req,
       delayRate.sleep();      
 
     }
+
+    ROS_INFO("Viewpoint-Selection finished");
 
     tri_t::initialized = true;
     
@@ -749,6 +737,13 @@ bool plan(koptplanner::inspection::Request  &req,
   for(typename std::vector<tri_t*>::iterator it = tri.begin(); it != tri.end(); it++)
     delete (*it);
   tri.clear();
+  if (!req.inspectionAreaCoarse.empty())
+  {
+      for(typename std::vector<tri_t*>::iterator it = tri_coarse.begin(); it != tri_coarse.end(); it++)
+      {
+          delete (*it);
+      }
+  }
   for(typename std::list<reg_t*>::iterator it = sys_t::obstacles.begin(); it != sys_t::obstacles.end(); it++)
     delete (*it);
   sys_t::obstacles.clear();
@@ -786,7 +781,7 @@ int main(int argc, char **argv)
   ReadPenaltiesStatic = 0;
 
   marker_pub = n.advertise<nav_msgs::Path>("visualization_marker", 1);
-  viewpoint_pub = n.advertise<visualization_msgs::Marker>("viewpoint_marker", 1); //TO-DO: Remove
+  viewpoint_pub = n.advertise<visualization_msgs::Marker>("viewpoint_marker", 1);
 
   ros::ServiceServer service = n.advertiseService("inspectionPath", plan);
   ROS_INFO("Service started");
