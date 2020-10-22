@@ -1574,4 +1574,11 @@ solid vcg
       vertex   1.463667e+00  3.365440e-01  9.547874e+00
     endloop
   endfacet
+  facet normal  0  1  0
+    outer loop
+      vertex   -1.0  -0.0  -8.0
+      vertex   1.0  -0.0  -8.0
+      vertex   1.0  -0.0  -6.0
+    endloop
+  endfacet
 endsolid vcg

@@ -23,12 +23,14 @@ void ViewpointReduction::generateVisibilityMatrix(std::vector<tri_t*> tri, State
 
   this->visMat.resize(tri.size(),this->vpCount);
   this->visMat.fill(false);
-
+  
+  int progress_old = 0;
   //Viewpoint-Counter, columns
   for(int i = 0; i < this->vpCount; i++)
   {
-    float progress = (float)i*100/this->vpCount;
-    ROS_INFO("Progress: %.1f%%", progress);
+    int progress = (int)i*100/this->vpCount;
+    if(progress != progress_old) ROS_INFO("Progress: %i\t%%", progress);
+    progress_old = progress;
     std::unordered_set<tri_t*> vis_set(tri.begin(), tri.end());
 
     vis_set = FrustumCulling::getFacetsWithinFrustum(vis_set, VP[i], true);

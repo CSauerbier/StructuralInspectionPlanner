@@ -33,6 +33,7 @@
 #include <ros/package.h>
 
 #include "ViewpointReduction/ViewpointReduction.h"
+#include "Culling/HiddenSurfaceRemoval.h"
 
 #ifdef __TIMING_INFO__
  long time_DBS;
@@ -392,7 +393,7 @@ bool plan(koptplanner::inspection::Request  &req,
       }
       else
       {
-        tmp->init();    //TO-DO: modify init function
+        tmp->init();    //TO-DO_old: modify init function
         tri_coarse.push_back(tmp);
       }
     }
@@ -431,7 +432,7 @@ bool plan(koptplanner::inspection::Request  &req,
     tmp->x2[2] = yaw_angle;
 #endif
     tmp->Fixpoint = true;
-    tri.push_back(tmp); //TO-DO: Does the other vector need these entries too?
+    tri.push_back(tmp); //TO-DO_old: Does the other vector need these entries too?
   }
   
   std::fstream file;
@@ -583,15 +584,17 @@ bool plan(koptplanner::inspection::Request  &req,
     vpRedCoarse.generateVisibilityMatrix(tri_coarse, VP);
     vpRedCoarse.removeRedundantVPs(VP);
 
+    std::vector<tri_t*> tri_reduced = HiddenSurfaceRemoval::removeHiddenSurfaces(tri_coarse, vpRedCoarse.getUncoveredTriangles(), tri);
+
     //Check how the sampled VPs perform on the full mesh
     ViewpointReduction vpRedFine(vpRedCoarse.getNoOfUniqueVPs());
-    vpRedFine.generateVisibilityMatrix(tri, VP);
+    vpRedFine.generateVisibilityMatrix(tri_reduced, VP);
 
     /*  Perform VP-Sampling for those facets that are not visible from the VPs sampled on the coarse mesh*/
     std::vector<tri_t*> tri_uncovered = vpRedFine.getUncoveredTriangles();
 
     int maxID_uncovered = tri_uncovered.size();
-    int vp_index = vpRedCoarse.getVPsKept().size() + 1; //TO-DO: Introduce this variable earlier and use throughout
+    int vp_index = vpRedCoarse.getVPsKept().size() + 1; //TO-DO_old: Introduce this variable earlier and use throughout
     
         /* -------- ART -- GALLERY -------- */
     for(int i = 0; i < maxID_uncovered; i++)
@@ -605,14 +608,14 @@ bool plan(koptplanner::inspection::Request  &req,
     /*  From combined set of VPs, choose most efficient configuration  */
 
     ViewpointReduction vpRedCombined (vp_index);
-    vpRedCombined.generateVisibilityMatrix(tri, VP);
+    vpRedCombined.generateVisibilityMatrix(tri_reduced, VP);
     vpRedCombined.removeRedundantVPs(VP);
 
-    //TO-DO: Sleep as parameter for manual sequential inspection
+    //TO-DO_old: Sleep as parameter for manual sequential inspection
     /*  VISUALIZATION     */
     ros::Rate delayRate(20);
     std::vector<VisibilityContainer> temp_vc = vpRedCombined.getVPsKept();
-    ROS_INFO("No. of VPs overall: %li", temp_vc.size()); //TO-DO: Clean up
+    ROS_INFO("No. of VPs overall: %li", temp_vc.size()); //TO-DO_old: Clean up
     for (int i=0; i<temp_vc.size(); i++)
     {
       Singleton<CameraVisualization>().visualizeCameras(temp_vc.at(i).getVP());

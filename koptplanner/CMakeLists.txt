@@ -89,6 +89,7 @@ add_executable(plan
   src/OcclusionCulling.cpp
   src/BackfaceCulling.cpp
   src/FrustumCulling.cpp
+  src/HiddenSurfaceRemoval.cpp
   include/planner_rrts/kdtree.c
   include/LKH-2.0.7/SRC/LKHmain.c
   include/LKH-2.0.7/SRC/Activate.c

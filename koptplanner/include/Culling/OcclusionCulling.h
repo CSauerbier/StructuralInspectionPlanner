@@ -14,8 +14,6 @@
 
 namespace bg = boost::geometry;
 
-//TO-DO: Consider using float instead of double throughout
-
 //Representation of triangle in a spherical coordinate system as seen from the respective VP
 struct TriSpherical
 {
