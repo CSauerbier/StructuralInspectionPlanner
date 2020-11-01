@@ -102,7 +102,7 @@ Visualization Manager:
       Marker Topic: /viewpoint_marker
       Name: Marker
       Namespaces:
-        {}
+        Viewpoints: true
       Queue Size: 100
       Value: true
     - Alpha: 1
@@ -134,7 +134,7 @@ Visualization Manager:
       Marker Topic: /triangle_visualization
       Name: MarkerArray
       Namespaces:
-        {}
+        triangle_list: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -173,7 +173,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 36.430301666259766
+      Distance: 692.4553833007812
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -181,17 +181,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -3.345860004425049
-        Y: 0.743556022644043
-        Z: -0.8305720090866089
+        X: 22.468429565429688
+        Y: -0.5137935876846313
+        Z: 65.51451110839844
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5652040243148804
+      Pitch: 0.5402042269706726
       Target Frame: <Fixed Frame>
-      Yaw: 2.249030113220215
+      Yaw: 2.4890012741088867
     Saved: ~
 Window Geometry:
   Displays:

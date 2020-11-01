@@ -1,0 +1,6 @@
+string file_path_in
+float32 target_resolution
+
+---
+
+string file_path_out

@@ -121,7 +121,7 @@ void CameraVisualization::visualizeCameras(StateVector *view_point)
   point.pose.orientation.w = q.w();
 
   //sqrt(SQ(problemBoundary.size[0])+SQ(problemBoundary.size[1])+SQ(problemBoundary.size[2]))/70.0; //TO-DO: Introduce parameter
-  double scaleVP = 1.0;
+  double scaleVP = 30.0;
   point.scale.x = 2*scaleVP;
   point.scale.y = scaleVP/10.0;
   point.scale.z = scaleVP/10.0;

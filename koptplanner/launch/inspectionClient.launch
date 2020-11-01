@@ -1,0 +1,11 @@
+<launch>
+    <node name="Inspection_Planner" pkg="koptplanner" type="plan" clear_params="true" output="screen">
+	    <rosparam file="$(find koptplanner)/Parameters.yaml"/>
+    </node>
+    <node name="request" pkg="request" type="inspectionClient" output="screen">
+        <rosparam file="$(find koptplanner)/Parameters.yaml"/>
+    </node>
+    <node name="mesh_modifier" pkg="request" type="mesh_resolution_modification.py" output="screen"> </node>
+    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find koptplanner)/launch/structuralInspectionPlanner.rviz" />
+</launch>
+

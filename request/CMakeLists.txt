@@ -57,11 +57,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+  FILES
+  MeshResolutionModification.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -86,12 +85,12 @@ generate_messages(
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
-#catkin_package(
+catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES request
-#  CATKIN_DEPENDS other_catkin_pkg
+  CATKIN_DEPENDS roscpp rospy std_msgs message_runtime
 #  DEPENDS system_lib
-#)
+)
 
 ###########
 ## Build ##
@@ -110,29 +109,19 @@ include_directories(
 # )
 
 ## Declare a cpp executable
-add_executable(request src/requester.cpp)
-add_executable(bigBen src/bigBen.cpp)
+add_executable(inspectionClient src/inspectionClient.cpp)
 add_executable(hoaHakanaia src/hoaHakanaia.cpp)
-add_executable(solarPlant src/solarPlant.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-add_dependencies(request koptplanner_generated_messages_cpp)
-add_dependencies(bigBen koptplanner_generated_messages_cpp)
+add_dependencies(inspectionClient koptplanner_generated_messages_cpp)
 add_dependencies(hoaHakanaia koptplanner_generated_messages_cpp)
-add_dependencies(solarPlant koptplanner_generated_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(request
-  ${catkin_LIBRARIES}
-)
-target_link_libraries(bigBen
+target_link_libraries(inspectionClient
   ${catkin_LIBRARIES}
 )
 target_link_libraries(hoaHakanaia
-  ${catkin_LIBRARIES}
-)
-target_link_libraries(solarPlant
   ${catkin_LIBRARIES}
 )
 
@@ -145,10 +134,10 @@ target_link_libraries(solarPlant
 
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
-# install(PROGRAMS
-#   scripts/my_python_script
-#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
+install(PROGRAMS
+  scripts/mesh_resolution_modification.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
 ## Mark executables and/or libraries for installation
 # install(TARGETS request request_node

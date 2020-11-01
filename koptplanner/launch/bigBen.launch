@@ -1,8 +1,0 @@
-<launch>
-    <node name="Inspection_Planner" pkg="koptplanner" type="plan" clear_params="true" output="screen">
-	    <rosparam file="$(find koptplanner)/bigBenParam.yaml"/>
-    </node>
-    <node name="request" pkg="request" type="bigBen"> </node>
-    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find koptplanner)/launch/structuralInspectionPlanner.rviz" />
-</launch>
-

@@ -585,6 +585,7 @@ bool plan(koptplanner::inspection::Request  &req,
     vpRedCoarse.removeRedundantVPs(VP);
 
     std::vector<tri_t*> tri_reduced = HiddenSurfaceRemoval::removeHiddenSurfaces(tri_coarse, vpRedCoarse.getUncoveredTriangles(), tri);
+    // auto tri_reduced = tri;
 
     //Check how the sampled VPs perform on the full mesh
     ViewpointReduction vpRedFine(vpRedCoarse.getNoOfUniqueVPs());

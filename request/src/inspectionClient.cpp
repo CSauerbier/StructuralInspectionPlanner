@@ -1,5 +1,5 @@
 /*!
- * \file requester.cpp
+ * \file inspectionClient.cpp
  *
  * More elaborate description
  */
@@ -14,13 +14,15 @@
 #include <std_msgs/Int32.h>
 #include <ros/package.h>
 #include "tf/tf.h"
+#include <math.h>
+
+#include "request/MeshResolutionModification.h"
 
 std::vector<nav_msgs::Path> * readSTLfile(std::string name);
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "requester");
-  ROS_INFO("Requester is alive");
+  ros::init(argc, argv, "inspectionClient");
   if (argc != 1)
   {
     ROS_INFO("usage: plan");
@@ -32,24 +34,29 @@ int main(int argc, char **argv)
   ros::Publisher stl_pub = n.advertise<nav_msgs::Path>("stl_mesh", 1);
   ros::ServiceClient client = n.serviceClient<koptplanner::inspection>("inspectionPath");
 
+  std::string coarse_file_path, fine_file_path;
+  request::MeshResolutionModification mesh_srv;
+  std::string file_path_in;
+  float target_resolution_coarse, target_resolution_fine;
+
   ros::Rate r(50.0);
   ros::Rate r2(1.0);
   r2.sleep();
 
   /* define the bounding box */
   koptplanner::inspection srv;
-  srv.request.spaceSize.push_back(1375);
-  srv.request.spaceSize.push_back(2165);
-  srv.request.spaceSize.push_back(0.001);
-  srv.request.spaceCenter.push_back(1375.0/2.0);
-  srv.request.spaceCenter.push_back(2165.0/2.0);
-  srv.request.spaceCenter.push_back(200.0);
+  srv.request.spaceSize.push_back(2000);
+  srv.request.spaceSize.push_back(2000);
+  srv.request.spaceSize.push_back(2000);
+  srv.request.spaceCenter.push_back(0);
+  srv.request.spaceCenter.push_back(0);
+  srv.request.spaceCenter.push_back(0);
   geometry_msgs::Pose reqPose;
 
-  /* starting pose */
-  reqPose.position.x = 300.0;
-  reqPose.position.y = 300.0;
-  reqPose.position.z = 200.0;
+  /* starting pose*/
+  reqPose.position.x = 25.0;
+  reqPose.position.y = 25.0;
+  reqPose.position.z = -55.0;
   tf::Quaternion q = tf::createQuaternionFromRPY(0.0, 0.0, 0.0);
   reqPose.orientation.x = q.x();
   reqPose.orientation.y = q.y();
@@ -58,9 +65,9 @@ int main(int argc, char **argv)
   srv.request.requiredPoses.push_back(reqPose);
 
   /* final pose (remove if no explicit final pose is desired) */
-  reqPose.position.x = 400.0;
-  reqPose.position.y = 300.0;
-  reqPose.position.z = 200.0;
+  reqPose.position.x = 25.0;
+  reqPose.position.y = 25.0;
+  reqPose.position.z = -55;
   q = tf::createQuaternionFromRPY(0.0, 0.0, 0.0);
   reqPose.orientation.x = q.x();
   reqPose.orientation.y = q.y();
@@ -70,16 +77,41 @@ int main(int argc, char **argv)
 
   /* parameters for the path calculation (such as may change during mission) */
   srv.request.incidenceAngle = M_PI/6.0;
-  srv.request.minDist = 40.0;
-  srv.request.maxDist = 300.0;
-  srv.request.numIterations = 20;
+  srv.request.minDist = 325.0;
+  srv.request.maxDist = 555.0;
+  srv.request.numIterations = 1;
+  //TO-DO: Remove iterations
+
+
+  ros::Rate rtest(30);
+  ros::ServiceClient service_call = n.serviceClient<request::MeshResolutionModification>("/mesh_resolution_modification");
+
+  ros::param::get("~/mesh/path", file_path_in);
+  ros::param::get("~/mesh/target_resolution_coarse", target_resolution_coarse);
+  ros::param::get("~/mesh/target_resolution_fine", target_resolution_fine);
+
+  mesh_srv.request.file_path_in = file_path_in;
+  mesh_srv.request.target_resolution = target_resolution_coarse;
+  service_call.waitForExistence();
+  if(!service_call.call(mesh_srv)) return 1;
+  coarse_file_path = mesh_srv.response.file_path_out;
+
+  mesh_srv.request.target_resolution = target_resolution_fine;
+  service_call.waitForExistence();
+  if(!service_call.call(mesh_srv)) 
+  {
+      ROS_ERROR("Mesh-Service call failed");
+      return 1;
+  }
+  fine_file_path = mesh_srv.response.file_path_out;
+
 
   /* read STL file and publish to rviz */
-  std::vector<nav_msgs::Path> * mesh = readSTLfile(ros::package::getPath("request")+"/meshes/regularPlanes/rPlane.stl");
+  std::vector<nav_msgs::Path> * mesh = readSTLfile(fine_file_path);
   ROS_INFO("mesh size = %i", (int)mesh->size());
   for(std::vector<nav_msgs::Path>::iterator it = mesh->begin(); it != mesh->end() && ros::ok(); it++)
   {
-    stl_pub.publish(*it);
+    // stl_pub.publish(*it);
     geometry_msgs::Polygon p;
     geometry_msgs::Point32 p32;
     p32.x = it->poses[0].pose.position.x;
@@ -95,58 +127,35 @@ int main(int argc, char **argv)
     p32.z = it->poses[2].pose.position.z;
     p.points.push_back(p32);
     srv.request.inspectionArea.push_back(p);
-    r.sleep();
+    // r.sleep();
   }
 
-  /* define obstacle regions as cuboids that are coordinate system aligned */
-  /*
-  shape_msgs::SolidPrimitive body;
-  body.type = shape_msgs::SolidPrimitive::BOX;
-  body.dimensions.push_back(40.0);
-  body.dimensions.push_back(50.0);
-  body.dimensions.push_back(4.0);
-  srv.request.obstacles.push_back(body);
-  geometry_msgs::Pose pose;
-  pose.position.x = 600.0;
-  pose.position.y = 600.0;
-  pose.position.z = 200.0;
-  pose.orientation.x = 0.0;
-  pose.orientation.y = 0.0;
-  pose.orientation.z = 0.0;
-  pose.orientation.w = 1.0;
-  srv.request.obstaclesPoses.push_back(pose);
-  srv.request.obstacleIntransparancy.push_back(0);
-
-  // publish obstacles for rviz 
-  visualization_msgs::Marker marker;
-  marker.header.frame_id = "kopt_frame";
-  marker.header.stamp = ros::Time::now();
-  marker.ns = "obstacles";
-  marker.id = 0; // enumerate when adding more obstacles
-  marker.type = visualization_msgs::Marker::CUBE;
-  marker.action = visualization_msgs::Marker::ADD;
-
-  marker.pose.position.x = pose.position.x;
-  marker.pose.position.y = pose.position.y;
-  marker.pose.position.z = pose.position.z;
-  marker.pose.orientation.x = pose.orientation.x;
-  marker.pose.orientation.y = pose.orientation.y;
-  marker.pose.orientation.z = pose.orientation.z;
-  marker.pose.orientation.w = pose.orientation.w;
-
-  marker.scale.x = body.dimensions[0];
-  marker.scale.y = body.dimensions[1];
-  marker.scale.z = body.dimensions[2];
-
-  marker.color.r = 0.0f;
-  marker.color.g = 0.0f;
-  marker.color.b = 1.0f;
-  marker.color.a = 0.5;
-
-  marker.lifetime = ros::Duration();
-  obstacle_pub.publish(marker);
-  r.sleep();
-  */
+  /* read in simplified coarse mesh for preprocessing*/
+  std::vector<nav_msgs::Path> *mesh2 = readSTLfile(coarse_file_path);
+  if(mesh2 != NULL)
+  {
+    ROS_INFO("mesh size = %i", (int)mesh2->size());
+    for(std::vector<nav_msgs::Path>::iterator it = mesh2->begin(); it != mesh2->end() && ros::ok(); it++)
+    {
+      // stl_pub.publish(*it);
+      geometry_msgs::Polygon p;
+      geometry_msgs::Point32 p32;
+      p32.x = it->poses[0].pose.position.x;
+      p32.y = it->poses[0].pose.position.y;
+      p32.z = it->poses[0].pose.position.z;
+      p.points.push_back(p32);
+      p32.x = it->poses[1].pose.position.x;
+      p32.y = it->poses[1].pose.position.y;
+      p32.z = it->poses[1].pose.position.z;
+      p.points.push_back(p32);
+      p32.x = it->poses[2].pose.position.x;
+      p32.y = it->poses[2].pose.position.y;
+      p32.z = it->poses[2].pose.position.z;
+      p.points.push_back(p32);
+      srv.request.inspectionAreaCoarse.push_back(p);
+      // r.sleep();
+    }
+  }
 
   if (client.call(srv))
   {
@@ -209,7 +218,8 @@ std::vector<nav_msgs::Path> * readSTLfile(std::string name)
   std::vector<nav_msgs::Path> * mesh = new std::vector<nav_msgs::Path>;
   std::fstream f;
   f.open(name.c_str());
-  assert(f.is_open());
+  // assert(f.is_open());
+  if (!f.is_open()) return NULL;
   int MaxLine = 0;
   char* line;
   double maxX = -DBL_MAX;

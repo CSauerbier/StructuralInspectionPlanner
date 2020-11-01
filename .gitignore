@@ -6,6 +6,7 @@ koptplanner/data/latestPath.csv
 koptplanner/data/tourlength.m
 request/meshes/Original/*
 request/meshes/Alternative/*
+request/meshes/cache/*
 request/visualization/inspectionScenario.m
 
 #Temporary backup files
