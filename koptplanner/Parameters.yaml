@@ -1,7 +1,14 @@
 #camera parameters
-camera/horizontal: deg(37.6)
-camera/vertical: deg(29.3)
+# camera/horizontal: deg(37.6)
+# camera/vertical: deg(29.3)
+camera/horizontal: deg(30)
+camera/vertical: deg(30)
 camera/pitch: deg(0)
+#maximum and minimum sensor distance in mm
+camera/max_dist: 555.0
+camera/min_dist: 325.0
+#minimum incidence angle in degrees
+camera/incidence_angle: 45
 
 #rotorcraft parameters
 rotorcraft/maxSpeed: 1.0
@@ -11,3 +18,6 @@ rotorcraft/maxAngularSpeed: 0.5
 mesh/path: "/home/chris/catkin_ws/src/StructuralInspectionPlanner/request/meshes/BigBen.stl"
 mesh/target_resolution_coarse: 0.02
 mesh/target_resolution_fine: 0.01
+
+#display
+display/progress: true

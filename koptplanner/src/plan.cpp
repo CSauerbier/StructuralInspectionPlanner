@@ -34,6 +34,7 @@
 
 #include "ViewpointReduction/ViewpointReduction.h"
 #include "Culling/HiddenSurfaceRemoval.h"
+#include "Sampling/VPsampling.h"
 
 #ifdef __TIMING_INFO__
  long time_DBS;
@@ -564,8 +565,18 @@ bool plan(koptplanner::inspection::Request  &req,
         }
 #endif
       }
+
       /* sample viewpoint */
-      StateVector VPtmp = tri_coarse[i]->dualBarrierSampling(s1,s2,&VP[i]);
+      StateVector VPtmp;
+      if(i==3)
+      {
+        VPtmp = RandomSampling::getVP(tri_coarse[i], false);
+      }
+      else
+      {
+        VPtmp = RandomSampling::getVP(tri_coarse[i], false);
+      }
+
       if(koptPlannerIteration == 0 || vp_tol<(VPtmp - VP[i]).norm())
       {
         VP[i] = VPtmp;
@@ -601,7 +612,7 @@ bool plan(koptplanner::inspection::Request  &req,
     for(int i = 0; i < maxID_uncovered; i++)
     {
       //Save VPs behind those from previous sampling
-      VP[vp_index] = tri_uncovered[i]->dualBarrierSampling(NULL,NULL,&VP[i+maxID_uncovered]);
+      VP[vp_index] = RandomSampling::getVP(tri_coarse[i], false);
       reinitRRTs[i] = 1; // delete (if existing) and reinitialize rrt* tree
       vp_index++;
     }

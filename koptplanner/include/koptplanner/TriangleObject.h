@@ -34,6 +34,7 @@ namespace Holonomic
      */
     static double incidenceAngle;
     
+  public:
     /*!
      * \brief Static parameter minimally allowed distance for inspection
      *
@@ -47,7 +48,6 @@ namespace Holonomic
      * More elaborate description
      */
     static double maxDist;
-  public:
     
     /*!
      * \brief Triangle constructor

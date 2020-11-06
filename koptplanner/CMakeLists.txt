@@ -70,6 +70,7 @@ include_directories(
   include/ViewpointReduction
   include/Visualization
   include/Culling
+  include/Sampling
   include/LKH-2.0.7/SRC
   include/LKH-2.0.7/SRC/INCLUDE
   ${catkin_INCLUDE_DIRS}
@@ -90,6 +91,7 @@ add_executable(plan
   src/BackfaceCulling.cpp
   src/FrustumCulling.cpp
   src/HiddenSurfaceRemoval.cpp
+  src/VPsampling.cpp
   include/planner_rrts/kdtree.c
   include/LKH-2.0.7/SRC/LKHmain.c
   include/LKH-2.0.7/SRC/Activate.c

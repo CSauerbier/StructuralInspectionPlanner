@@ -38,6 +38,7 @@ int main(int argc, char **argv)
   request::MeshResolutionModification mesh_srv;
   std::string file_path_in;
   float target_resolution_coarse, target_resolution_fine;
+  bool enable_mesh_modification;
 
   ros::Rate r(50.0);
   ros::Rate r2(1.0);
@@ -76,9 +77,12 @@ int main(int argc, char **argv)
   srv.request.requiredPoses.push_back(reqPose);
 
   /* parameters for the path calculation (such as may change during mission) */
-  srv.request.incidenceAngle = M_PI/6.0;
-  srv.request.minDist = 325.0;
-  srv.request.maxDist = 555.0;
+  //TO-DO: Add handling for missing parameters (ros::param::has("my_param")) and consider parametrizing more variables
+  ros::param::get("~/camera/incidence_angle",srv.request.incidenceAngle);
+  srv.request.incidenceAngle = srv.request.incidenceAngle*M_PI/180;
+
+  ros::param::get("~/camera/min_dist", srv.request.minDist);
+  ros::param::get("~/camera/max_dist", srv.request.maxDist);
   srv.request.numIterations = 1;
   //TO-DO: Remove iterations
 

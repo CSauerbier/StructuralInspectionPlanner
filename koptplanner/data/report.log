@@ -1,17 +1,17 @@
 Inspection path planner version 1.0.0
 Scenario:
-Number of facets:	4266
+Number of facets:	10732
 Number of obstacles:	0
 Space center:		(0, 0, 0)
 Space size:		(2000, 2000, 2000)
 Starting point:		(25, 25, -55)
 Final point:		(25, 25, -55)
-Angle of incidence:	0.523599rad
+Angle of incidence:	0.785398rad
 Range:			(325, 555)m
 Number of iterations:	1
 Linear speed:		1m/s
 Yaw rate:		0.5rad/s
-Field of view [h,v]:	[0.656244, 0.511381]rad
+Field of view [h,v]:	[0.785398, 0.785398]rad
 Camera pitch:		0rad
 
 

@@ -8,6 +8,7 @@ request/meshes/Original/*
 request/meshes/Alternative/*
 request/meshes/cache/*
 request/visualization/inspectionScenario.m
+koptplanner/data/*
 
 #Temporary backup files
 *~
