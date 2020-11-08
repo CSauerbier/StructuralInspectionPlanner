@@ -151,19 +151,19 @@ std::unordered_map<tri_t*, tri_t*> linkMeshElements(std::unordered_set<tri_t*> c
             not_within_extrusion.push_back(tri_f);
             for(auto tri_c: coarse_mesh)
             {
-                float distance = (tri_c->x1 - center).squaredNorm();
+                float distance = (tri_c->x1 - center).norm();
                 if(distance < shortest_dist)
                 {
                     shortest_dist = distance;
                     closest_tri = tri_c;
                 }
-                distance = (tri_c->x2 - center).squaredNorm();
+                distance = (tri_c->x2 - center).norm();
                 if(distance < shortest_dist)
                 {
                     shortest_dist = distance;
                     closest_tri = tri_c;
                 }
-                distance = (tri_c->x3 - center).squaredNorm();
+                distance = (tri_c->x3 - center).norm();
                 if(distance < shortest_dist)
                 {
                     shortest_dist = distance;
