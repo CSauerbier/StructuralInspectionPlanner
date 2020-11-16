@@ -612,7 +612,7 @@ bool plan(koptplanner::inspection::Request  &req,
     for(int i = 0; i < maxID_uncovered; i++)
     {
       //Save VPs behind those from previous sampling
-      VP[vp_index] = RandomSampling::getVP(tri_coarse[i], false);
+      VP[vp_index] = RandomSampling::getVP(tri_uncovered[i], false);
       reinitRRTs[i] = 1; // delete (if existing) and reinitialize rrt* tree
       vp_index++;
     }
