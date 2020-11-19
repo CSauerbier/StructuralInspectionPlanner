@@ -47,11 +47,11 @@ StateVector RandomSampling::getVP(tri_t* tri, bool debug)
     vp[2] = vp_pos[2];
 
     //Setting pitch entry so that the optical axis vector points at the center of the triangle
-    Vector3f triMean((tri->x1[0]+tri->x2[0]+tri->x3[0])/3,
+    Vector3f tri_mean((tri->x1[0]+tri->x2[0]+tri->x3[0])/3,
                      (tri->x1[1]+tri->x2[1]+tri->x3[1])/3,
                      (tri->x1[2]+tri->x2[2]+tri->x3[2])/3  );
-    vp[3] = atan2(triMean[1]-vp[1], triMean[0]-vp[0]);
-    vp[4] = atan2(vp[2]-triMean[2], hypot(vp[0]-triMean[0], vp[1]-triMean[1]));
+    vp[3] = atan2(tri_mean[1]-vp[1], tri_mean[0]-vp[0]);
+    vp[4] = atan2(vp[2]-tri_mean[2], hypot(vp[0]-tri_mean[0], vp[1]-tri_mean[1]));
 
     return vp;
 }

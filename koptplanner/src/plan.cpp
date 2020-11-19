@@ -591,22 +591,20 @@ bool plan(koptplanner::inspection::Request  &req,
     }
 
     //Remove redundant VPs for coarse mesh
-    ViewpointReduction vpRedCoarse (maxID_coarse);
-    vpRedCoarse.generateVisibilityMatrix(tri_coarse, VP);
-    vpRedCoarse.removeRedundantVPs(VP);
+    ViewpointReduction vpRedCoarse (tri_coarse, tri_coarse, VP, maxID_coarse);
+    vpRedCoarse.removeRedundantVPs();
 
     std::vector<tri_t*> tri_reduced = HiddenSurfaceRemoval::removeHiddenSurfaces(tri_coarse, vpRedCoarse.getUncoveredTriangles(), tri);
     // auto tri_reduced = tri;
 
     //Check how the sampled VPs perform on the full mesh
-    ViewpointReduction vpRedFine(vpRedCoarse.getNoOfUniqueVPs());
-    vpRedFine.generateVisibilityMatrix(tri_reduced, VP);
+    ViewpointReduction vpRedFine(tri_reduced, tri_reduced, VP, vpRedCoarse.getNoOfSelectedVPs());
 
     /*  Perform VP-Sampling for those facets that are not visible from the VPs sampled on the coarse mesh*/
     std::vector<tri_t*> tri_uncovered = vpRedFine.getUncoveredTriangles();
 
     int maxID_uncovered = tri_uncovered.size();
-    int vp_index = vpRedCoarse.getVPsKept().size() + 1; //TO-DO_old: Introduce this variable earlier and use throughout
+    int vp_index = vpRedCoarse.getNoOfSelectedVPs() + 1;
     
         /* -------- ART -- GALLERY -------- */
     for(int i = 0; i < maxID_uncovered; i++)
@@ -619,14 +617,13 @@ bool plan(koptplanner::inspection::Request  &req,
 
     /*  From combined set of VPs, choose most efficient configuration  */
 
-    ViewpointReduction vpRedCombined (vp_index);
-    vpRedCombined.generateVisibilityMatrix(tri_reduced, VP);
-    vpRedCombined.removeRedundantVPs(VP);
+    ViewpointReduction vpRedCombined (tri_reduced, tri_reduced, VP, vp_index);
+    vpRedCombined.removeRedundantVPs();
 
     //TO-DO_old: Sleep as parameter for manual sequential inspection
     /*  VISUALIZATION     */
     ros::Rate delayRate(20);
-    std::vector<VisibilityContainer> temp_vc = vpRedCombined.getVPsKept();
+    std::vector<VisibilityContainer> temp_vc = vpRedCombined.getSelectedVPs();
     ROS_INFO("No. of VPs overall: %li", temp_vc.size()); //TO-DO_old: Clean up
     for (int i=0; i<temp_vc.size(); i++)
     {

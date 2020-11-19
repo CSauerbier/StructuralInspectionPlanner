@@ -24,7 +24,9 @@
 #ifdef USE_HOLONOMIC_MODEL
  typedef Eigen::Vector3f StateVector;
 #elif defined USE_ROTORCRAFT_MODEL
- //typedef Eigen::Vector4f StateVector;
+ /**
+  * Vector holding [x, y, z, yaw, pitch] coordinates of the view point
+  * */
  typedef Eigen::Matrix< float , 5 , 1> StateVector;
 #elif defined USE_FIXEDWING_MODEL
  typedef Eigen::Matrix< float , 6 , 1> StateVector;

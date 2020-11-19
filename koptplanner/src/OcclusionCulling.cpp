@@ -5,7 +5,9 @@ typedef int vert_ind;
 typedef int horiz_ind;
 
 
-std::unordered_set<tri_t*> OcclusionCulling::getUnoccludedFacets(Eigen::Matrix<float, 5, 1> vp, std::unordered_set<tri_t*> tri_checked, std::unordered_set<tri_t*>tri_considered)
+std::unordered_set<tri_t*> OcclusionCulling::getUnoccludedFacets(Eigen::Matrix<float, 5, 1> vp,
+                                                                 std::unordered_set<tri_t*> tri_checked, 
+                                                                 std::unordered_set<tri_t*>tri_considered)
 {
     std::unordered_set<tri_t*> tri_to_return;
 
@@ -77,7 +79,7 @@ std::unordered_set<tri_t*> OcclusionCulling::getUnoccludedFacets(Eigen::Matrix<f
         } 
     }
 
-    //Iterate through point set to check if they are occluded
+    // Iterate through point set to check if they are occluded
     for(auto point: points_sp)
     {
         for(auto tri: tri_sp_container)

@@ -1,13 +1,11 @@
 #camera parameters
-# camera/horizontal: deg(37.6)
-# camera/vertical: deg(29.3)
-camera/horizontal: deg(30)
-camera/vertical: deg(30)
+camera/horizontal: deg(37.6)
+camera/vertical: deg(29.3)
 camera/pitch: deg(0)
-#maximum and minimum sensor distance in mm
+  #maximum and minimum sensor distance in mm
 camera/max_dist: 555.0
 camera/min_dist: 325.0
-#minimum incidence angle in degrees
+  #minimum incidence angle in degrees
 camera/incidence_angle: 45
 
 #rotorcraft parameters
@@ -21,3 +19,7 @@ mesh/target_resolution_fine: 0.01
 
 #display
 display/progress: true
+
+#algorithm
+  #percentage of surface area that needs to be covered by a view point to be considered further
+algorithm/stop_criterion: 0.5
