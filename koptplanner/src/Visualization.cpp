@@ -26,6 +26,11 @@ void Visualization::push_back(tri_t* tri)
   this->trisToBeVisualized.push_back(tri);
 }
 
+void Visualization::increment()
+{
+  s_publishing_number++;
+}
+
 void FacetVisualization::visualizeTriangles()
 {
   this->visualizeTriangles(this->trisToBeVisualized);

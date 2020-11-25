@@ -194,7 +194,6 @@ Vector_t Rotorcraft::Triangle<System_t, State_t, Vector_t, region_t>::dualBarrie
     best[i] = 0;
   double cost = DBL_MAX;
 
-  // TO-DO: Check if more elaborate method than angle definition is neccesary
   double angleLower =  (M_PI+g_camAngleVertical)/2.0;
   double angleUpper = -(M_PI+g_camAngleVertical)/2.0;
 

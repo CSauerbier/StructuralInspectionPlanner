@@ -14,6 +14,7 @@ rotorcraft/maxAngularSpeed: 0.5
 
 #mesh parameters
 mesh/path: "/home/chris/catkin_ws/src/StructuralInspectionPlanner/request/meshes/BigBen.stl"
+          #Make independent from my own file system
 mesh/target_resolution_coarse: 0.02
 mesh/target_resolution_fine: 0.01
 
@@ -22,4 +23,5 @@ display/progress: true
 
 #algorithm
   #percentage of surface area that needs to be covered by a view point to be considered further
-algorithm/stop_criterion: 0.5
+algorithm/stop_criterion: 0.2
+algorithm/sphere_sampling_points: 100

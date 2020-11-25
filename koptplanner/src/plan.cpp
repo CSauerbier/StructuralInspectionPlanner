@@ -482,7 +482,11 @@ bool plan(koptplanner::inspection::Request  &req,
     }
   }
 #else
-  VP = new StateVector[tri_coarse.size()+tri.size()];
+  int max_id_vp;
+  ros::param::get("~/algorithm/sphere_sampling_points", max_id_vp);
+  max_id_vp += tri_coarse.size()+tri.size();
+  
+  VP = new StateVector[max_id_vp];
 #endif
   if(reinitRRTs==NULL)
     reinitRRTs = new int[maxID];
@@ -501,116 +505,69 @@ bool plan(koptplanner::inspection::Request  &req,
     plannerLog << "====================================\n";
     plannerLog.close();
 
-    /* -------- ART -- GALLERY -------- */
-    for(int i = 0; i < maxID_coarse; i++)
+    size_t vp_index = 0;
+
+    int no_sphere_points;
+    ros::param::get("~/algorithm/sphere_sampling_points", no_sphere_points);
+    EquidistantPointsOnSphere sampler(req.spaceCenter, (req.maxDist+req.minDist)/2, 100);
+    if(sampler.numberOfPointsGenerated() > max_id_vp)
     {
-      StateVector * s1 = NULL;
-      StateVector * s2 = NULL;
-      /* find neighbour viewpoints if a tour exists already (koptPlannerIteration>0) */
-      if(koptPlannerIteration>0)
-      {
-        s1 = new StateVector;
-        s2 = new StateVector;
-        int kpred = 0;
-        while(kpred<maxID_coarse-1&&PTPPlanner::Tour_[kpred]-1!=i)
-          kpred++;
-        int ksucc = kpred;
-        if(kpred<=0)
-        {
-          kpred=maxID_coarse-1;
-        }
-        else if(kpred>=maxID_coarse-1)
-        {
-          ksucc=0;
-        }
-        else
-        {
-          kpred--;
-          ksucc++;
-        }
-        int Npred = PTPPlanner::Tour_[kpred]-1;
-        int Nsucc = PTPPlanner::Tour_[ksucc]-1;
-        assert(Npred<=maxID_coarse);
-        assert(Nsucc<=maxID_coarse);
-        *s1 = plannerArray[Npred]->rrts_.getLastVisible(plannerArray[i]->stateVec, tri_coarse[i]);
-#ifndef USE_FIXEDWING_MODEL
-        int lim = 0;
-        double smoothing_param = std::min(req.numIterations/2,25);
-        double neighbour_steps = std::min(2.0, 1.0+50.0/req.numIterations);
-        int maxWidth = (int)std::min(neighbour_steps*(double)(req.numIterations-smoothing_param-koptPlannerIteration), (double)(maxID_coarse)/2.0);
+      ROS_ERROR("Allocated VP Array memory was exceeded");
+      return 1;
+    }
+    for(auto i=0; i<sampler.numberOfPointsGenerated(); i++)
+    {
+      VP[i] = *sampler.getVP();
+    }
 
-        while((*s1)[0] == plannerArray[Npred]->stateVec[0] && (*s1)[1] == plannerArray[Npred]->stateVec[1] && (*s1)[2] == plannerArray[Npred]->stateVec[2] && (lim++)<maxWidth)
-        {
-          if(kpred == 0)
-            kpred = maxID_coarse-1;
-          else
-            kpred--;
-          int NpredOld = Npred;
-          Npred = PTPPlanner::Tour_[kpred]-1;
-          *s1 = plannerArray[Npred]->rrts_.getLastVisible(plannerArray[NpredOld]->stateVec, tri_coarse[i]);
-        }
-#endif
-        *s2 = plannerArray[Nsucc]->rrts_.getLastVisible(plannerArray[i]->stateVec, tri_coarse[i]);
-#ifndef USE_FIXEDWING_MODEL
-        lim = 0;
-        while((*s2)[0] == plannerArray[Nsucc]->stateVec[0] && (*s2)[1] == plannerArray[Nsucc]->stateVec[1] && (*s2)[2] == plannerArray[Nsucc]->stateVec[2] && (lim++)<maxWidth)
-        {
-          if(ksucc == maxID_coarse-1)
-            ksucc = 0;
-          else
-            ksucc++;
-          int NsuccOld = Nsucc;
-          Nsucc = PTPPlanner::Tour_[ksucc]-1;
-          *s2 = plannerArray[Nsucc]->rrts_.getLastVisible(plannerArray[NsuccOld]->stateVec, tri_coarse[i]);
-        }
-#endif
-      }
+    ViewpointReduction vp_sphere(tri_coarse, tri_coarse, VP, sampler.numberOfPointsGenerated());
+    vp_sphere.removeRedundantVPs();
 
+    vp_index += vp_sphere.getNoOfSelectedVPs();
+    
+    auto tri_uncovered_sphere = vp_sphere.getUncoveredTriangles();
+
+    /* -------- ART -- GALLERY -------- */
+    if(tri_uncovered_sphere.size() > max_id_vp)
+    {
+      ROS_ERROR("Allocated VP Array memory was exceeded");
+      return 1;
+    }
+    for(int i = 0; i < tri_uncovered_sphere.size(); i++)
+    {
       /* sample viewpoint */
-      StateVector VPtmp;
-      if(i==3)
-      {
-        VPtmp = RandomSampling::getVP(tri_coarse[i], false);
-      }
-      else
-      {
-        VPtmp = RandomSampling::getVP(tri_coarse[i], false);
-      }
-
-      if(koptPlannerIteration == 0 || vp_tol<(VPtmp - VP[i]).norm())
-      {
-        VP[i] = VPtmp;
-        reinitRRTs[i] = 1; // delete (if existing) and reinitialize rrt* tree
-      }
-      else
-        reinitRRTs[i] = 2; // only add iterations to the rrt* tree and don't adapt the viewpoint pose
-      delete s1;
-      s1 = NULL;
-      delete s2;
-      s2 = NULL;
+      VP[vp_index] = RandomSampling::getVP(tri_uncovered_sphere[i]);
+      reinitRRTs[i] = 1; // delete (if existing) and reinitialize rrt* tree
+      vp_index++;
     }
 
     //Remove redundant VPs for coarse mesh
-    ViewpointReduction vpRedCoarse (tri_coarse, tri_coarse, VP, maxID_coarse);
+    ViewpointReduction vpRedCoarse (tri_coarse, tri_coarse, VP, vp_index);
     vpRedCoarse.removeRedundantVPs();
 
+    vp_index = vpRedCoarse.getNoOfSelectedVPs();
+
     std::vector<tri_t*> tri_reduced = HiddenSurfaceRemoval::removeHiddenSurfaces(tri_coarse, vpRedCoarse.getUncoveredTriangles(), tri);
-    // auto tri_reduced = tri;
 
     //Check how the sampled VPs perform on the full mesh
-    ViewpointReduction vpRedFine(tri_reduced, tri_reduced, VP, vpRedCoarse.getNoOfSelectedVPs());
+    ViewpointReduction vpRedFine(tri_reduced, tri_reduced, VP, vp_index);
 
     /*  Perform VP-Sampling for those facets that are not visible from the VPs sampled on the coarse mesh*/
     std::vector<tri_t*> tri_uncovered = vpRedFine.getUncoveredTriangles();
 
     int maxID_uncovered = tri_uncovered.size();
-    int vp_index = vpRedCoarse.getNoOfSelectedVPs() + 1;
+    vp_index = vpRedCoarse.getNoOfSelectedVPs();
     
         /* -------- ART -- GALLERY -------- */
+    if(maxID_uncovered > max_id_vp)
+    {
+      ROS_ERROR("Allocated VP Array memory was exceeded");
+      return 1;
+    }
     for(int i = 0; i < maxID_uncovered; i++)
     {
       //Save VPs behind those from previous sampling
-      VP[vp_index] = RandomSampling::getVP(tri_uncovered[i], false);
+      VP[vp_index] = RandomSampling::getVP(tri_uncovered[i]);
       reinitRRTs[i] = 1; // delete (if existing) and reinitialize rrt* tree
       vp_index++;
     }
@@ -620,11 +577,13 @@ bool plan(koptplanner::inspection::Request  &req,
     ViewpointReduction vpRedCombined (tri_reduced, tri_reduced, VP, vp_index);
     vpRedCombined.removeRedundantVPs();
 
+    vp_index = vpRedCombined.getNoOfSelectedVPs();
+
     //TO-DO_old: Sleep as parameter for manual sequential inspection
     /*  VISUALIZATION     */
     ros::Rate delayRate(20);
     std::vector<VisibilityContainer> temp_vc = vpRedCombined.getSelectedVPs();
-    ROS_INFO("No. of VPs overall: %li", temp_vc.size()); //TO-DO_old: Clean up
+    ROS_INFO("No. of VPs overall: %li", temp_vc.size());
     for (int i=0; i<temp_vc.size(); i++)
     {
       Singleton<CameraVisualization>().visualizeCameras(temp_vc.at(i).getVP());

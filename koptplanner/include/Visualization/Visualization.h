@@ -14,7 +14,6 @@ T& Singleton()
   return single;
 }
 
-//TO-DO: Consider making this a standalone node
 //TO-DO: Improve color handling
 class Visualization
 {
@@ -32,6 +31,7 @@ public:
 
   static Visualization& instance();
   void push_back(tri_t* tri);
+  static void increment();
 };
 
 class FacetVisualization: public Visualization

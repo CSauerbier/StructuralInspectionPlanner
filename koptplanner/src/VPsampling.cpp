@@ -1,6 +1,7 @@
 #include "Sampling/VPsampling.h"
 
-StateVector RandomSampling::getVP(tri_t* tri, bool debug)
+
+StateVector RandomSampling::getVP(tri_t* tri)
 {
     StateVector vp;
     Eigen::Vector3f pos_extended, pos_on_tri, vp_pos;
@@ -69,4 +70,84 @@ float RandomSampling::randNum()
     std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<> dis(0.0, 1.0);
     return dis(gen);
+}
+
+
+EquidistantPointsOnSphere::EquidistantPointsOnSphere(std::vector<double> center, float radius, unsigned int n_target)
+{
+    this->counter = 0;
+    this->samplePositionsUnitSphere(n_target);
+    this->convertToStateVector(center, radius);
+}
+
+EquidistantPointsOnSphere::~EquidistantPointsOnSphere()
+{
+    for(auto vp: view_points)
+    {
+        delete vp;
+    }
+    
+    for(auto point: points)
+    {
+        delete point;
+    }
+}
+
+/**
+ * Algorithm according to Deserno 2004
+ * */
+void EquidistantPointsOnSphere::samplePositionsUnitSphere(unsigned int n_target)
+{
+    unsigned int n_count = 0;
+    float a = 4*M_PI/n_target;
+    float d = sqrt(a);
+    unsigned int m_theta = std::round((float)M_PI/d);
+    float d_theta = M_PI/m_theta;
+    float d_phi = a/d_theta;
+
+    for(size_t m=0; m<m_theta; m++)
+    {
+        float theta = M_PI*(m + 0.5)/m_theta;
+        unsigned int m_phi = std::round((float)(2*M_PI*sin(theta)/d_phi));
+        
+        for(size_t n=0; n<m_phi; n++)
+        {
+            float phi = 2*M_PI*n/m_phi;
+
+            float x = sin(theta)*cos(phi);
+            float y = sin(theta)*sin(phi);
+            float z = cos(theta);
+            Eigen::Vector3f* tmp = new Eigen::Vector3f(x,y,z);
+            points.push_back(tmp);
+
+            n_count++;
+        }
+    }
+}
+
+void EquidistantPointsOnSphere::convertToStateVector(std::vector<double> center, float radius)
+{
+    auto test = points.at(0)->coeff(0);
+    for(auto point: points)
+    {
+        float x = radius*point->coeff(0) + center[0];
+        float y = radius*point->coeff(1) + center[1];
+        float z = radius*point->coeff(2) + center[2];
+        float yaw = std::atan2(-point->coeff(1), -point->coeff(0));
+        float pitch = std::atan2(point->coeff(2), hypot(point->coeff(0), point->coeff(1)));
+        StateVector* tmp = new StateVector;
+        *tmp << x, y, z, yaw, pitch;
+        view_points.push_back(tmp);
+    }
+}
+
+StateVector* EquidistantPointsOnSphere::getVP()
+{
+    if(view_points.size() > counter) counter++;
+    return view_points.at(counter-1);
+}
+
+size_t EquidistantPointsOnSphere::numberOfPointsGenerated()
+{
+    return this->view_points.size();
 }

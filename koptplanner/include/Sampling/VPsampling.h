@@ -8,6 +8,8 @@
 #include <numeric>
 #include <random>
 #include <time.h>
+#include <cmath>
+
 
 class RandomSampling
 {
@@ -33,5 +35,42 @@ public:
      * \param tri Triangle object to sample the view point for
      * \return Randomly sampled position within the boundaries
     */
-    static StateVector getVP(tri_t* tri, bool debug);//TO-DO: REmove debug flag
+    static StateVector getVP(tri_t* tri);
+};
+
+
+class EquidistantPointsOnSphere
+{
+private:
+    std::vector<StateVector*> view_points;
+    std::vector<Eigen::Vector3f*> points;
+    unsigned int counter;
+
+    void samplePositionsUnitSphere(unsigned int n_target);
+    void convertToStateVector(std::vector<double> center, float radius);
+public:
+    /**
+     * Creates object and triggers computation of equidistantly distributed points on a view sphere.
+     * Algorithm for equidistant sampling according to Deserno 2004
+     * \param center Center of the view sphere to be created
+     * \param radius Radius of the view sphere to be created
+     * \param n_target Target number of points to be generated. Actual number of points might vary slightly
+     * */
+    EquidistantPointsOnSphere(std::vector<double> center, float radius, unsigned int n_target);
+    
+    /**
+     * Destructor, deletes all member variables that require deletion
+     * */
+    ~EquidistantPointsOnSphere();
+
+    /**
+     * \returns Returns a view point sample and increments a counter, so that the next call of the function returns the next entry.
+     * If the last entry is reached, this entry is always returned in successive calls.
+     * */
+    StateVector* getVP();
+
+    /**
+     * \returns Number of samples generated. Number might differ from n_target passed to constructor
+     * */
+    size_t numberOfPointsGenerated();
 };
