@@ -14,6 +14,7 @@
 #include "Culling/BackfaceCulling.h"
 #include "Culling/FrustumCulling.h"
 #include "Visualization/Visualization.h"
+#include "Culling/DistanceCulling.h"
 
 typedef bool vis_mat_entry_t;
 

@@ -39,8 +39,6 @@ ViewpointReduction::ViewpointReduction(std::vector<tri_t*> tri_checked, std::vec
     this->setTriangleSurfaceAreas();
     this->view_points = VP;
     this->vis_matrix.init(tri_checked.size(), this->vp_count);
-    // this->vis_matrix.matrix.resize(tri_checked.size(),this->vp_count);
-    // this->vis_matrix.matrix.fill(false);
     this->surface_area = this->computeSurfaceArea(this->triangles);
     ros::param::get("~/algorithm/stop_criterion", this->area_stop_criterion);
     this->area_stop_criterion /= 100.0; //Percent
@@ -51,7 +49,6 @@ ViewpointReduction::ViewpointReduction(std::vector<tri_t*> tri_checked, std::vec
 }
 
 //TO-DO: Handle tri-Entries that correspond to required view points (Member variable "Fixpoint" = true)
-//TO-DO: Different system to keep track of rows and columns
 void ViewpointReduction::generateVisibilityMatrix()
 {
     int progress_old = 0;
@@ -66,13 +63,17 @@ void ViewpointReduction::generateVisibilityMatrix()
             if(progress != progress_old) ROS_INFO("Progress: %i\t%%", progress);
             progress_old = progress;
         }
+        
         std::unordered_set<tri_t*> vis_set(this->triangles.begin(), this->triangles.end());
+        std::unordered_set<tri_t*> vis_set_within_range;
 
         vis_set = FrustumCulling::getFacetsWithinFrustum(vis_set, this->view_points[vp], true);
 
         vis_set = BackfaceCulling::getFrontFacets(this->view_points[vp], vis_set);
 
-        vis_set = OcclusionCulling::getUnoccludedFacets(this->view_points[vp], vis_set, vis_set);
+        vis_set_within_range = DistanceCulling::getFacetsWithinDistance(vis_set, this->view_points[vp]);
+
+        vis_set = OcclusionCulling::getUnoccludedFacets(this->view_points[vp], vis_set_within_range, vis_set);
 
         StateVector vp_tmp = (this->view_points[vp]);
         //Triangle-Counter, rows

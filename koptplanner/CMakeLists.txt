@@ -90,6 +90,7 @@ add_executable(plan
   src/OcclusionCulling.cpp
   src/BackfaceCulling.cpp
   src/FrustumCulling.cpp
+  src/DistanceCulling.cpp
   src/HiddenSurfaceRemoval.cpp
   src/VPsampling.cpp
   include/planner_rrts/kdtree.c
