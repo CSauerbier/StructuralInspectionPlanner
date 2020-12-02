@@ -25,3 +25,4 @@ display/progress: true
   #percentage of surface area that needs to be covered by a view point to be considered further
 algorithm/stop_criterion: 0.2
 algorithm/sphere_sampling_points: 100
+algorithm/use_gpu: false

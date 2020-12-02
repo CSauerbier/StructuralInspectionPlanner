@@ -12,7 +12,23 @@
 #include <tf2_eigen/tf2_eigen.h>
 #include <tf2/LinearMath/Transform.h>
 
+#define THREADS_PER_BLOCK 1024
+
+//TO-DO: Documentation
+
 namespace bg = boost::geometry;
+
+int *within_triangle_query_gpu_driver(int num, int threads ,
+    float p_x,
+    float p_y,
+    float *v0_x, 
+    float *v0_y,
+    float *v1_x, 
+    float *v1_y, 
+    float *v2_x, 
+    float *v2_y, 
+    bool *output,
+    bool use_gpu);
 
 //Representation of triangle in a spherical coordinate system as seen from the respective VP
 struct TriSpherical
@@ -54,6 +70,7 @@ public:
 
 
 //TO-DO_old: Consider using class, especially for fillRasterElement
+
 namespace OcclusionCulling
 {
     std::unordered_set<tri_t*> getUnoccludedFacets(Eigen::Matrix<float, 5, 1> vp, std::unordered_set<tri_t*> tri_checked, std::unordered_set<tri_t*>tri_considered);
@@ -63,6 +80,25 @@ namespace OcclusionCulling
 
     //Checks if point in first argument lies within triangle of second argument
     bool geometryIsWithin(bg::model::point<float, 2, bg::cs::cartesian> point_under_test, TriSpherical* tri_sp);
+
+    /**
+     * Checks whether the input points_checked map contents is covered by any of the tri_considered triangles.
+     * If so, the correspoinding member of PointSpherical is set.
+     * \param points_checked Point map, each entry is checked for occlusion and updated accordingly
+     * \param tri_considered Potential occluders
+     * */
+    void occlusionCheck_usingBoost(std::map<std::tuple<float, float, float>, PointSpherical *> &points_checked, 
+                            std::unordered_set<TriSpherical *> &tri_considered);
+
+    /**
+     * Checks whether the input points_checked map contents is covered by any of the tri_considered triangles.
+     * If so, the correspoinding member of PointSpherical is set.
+     * Wrapper to convert the input data structures to c arrays that can be passed to the CUDA API.
+     * \param points_checked Point map, each entry is checked for occlusion and updated accordingly
+     * \param tri_considered Potential occluders
+     * */
+    void occlusionCheck_GPU(std::map<std::tuple<float, float, float>, PointSpherical *> &points_checked, 
+                            std::unordered_set<TriSpherical *> &tri_considered);
     //Checks if triangle in first argument lies within triangle of second argument
     char geometryIsWithin(TriSpherical* tri_sp_pot_ocludee, TriSpherical* tri_sp_occluder);
 

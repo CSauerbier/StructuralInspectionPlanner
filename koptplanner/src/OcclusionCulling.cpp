@@ -79,23 +79,8 @@ std::unordered_set<tri_t*> OcclusionCulling::getUnoccludedFacets(Eigen::Matrix<f
         } 
     }
 
-    // Iterate through point set to check if they are occluded
-    for(auto point: points_sp)
-    {
-        for(auto tri: tri_sp_container)
-        {
-            //if facet is closer to camera than point
-            if(tri->mean_distance_to_vp < point.second->vertex.get<2>())
-            {
-                if(OcclusionCulling::geometryIsWithin(dropZCoordinate(point.second->vertex), tri))
-                {
-                    point.second->is_occluded = true;
-                    
-                    break;
-                }
-            }
-        }
-    }
+    occlusionCheck_usingBoost(points_sp, tri_sp_container);
+    // occlusionCheck_GPU(points_sp, tri_sp_container);
     
     tri_to_return = tri_checked;
 
@@ -335,6 +320,115 @@ bool OcclusionCulling::geometryIsWithin(bg::model::point<float, 2, bg::cs::carte
     }
     bg::append(poly.outer(), dropZCoordinate(*(tri_sp->vertices.begin()))); //Add first point to close
     return bg::within(point_under_test, poly);
+}
+
+void OcclusionCulling::occlusionCheck_GPU(std::map<std::tuple<float, float, float>, PointSpherical *> &points_checked, 
+                            std::unordered_set<TriSpherical *> &tri_considered)
+{
+    //TO-DO: Rethink use of stl containers. Too slow? Specifically passing by value since copies are inefficient
+    //TO-DO: Do not convert to spherical, do occlusion check as ray triangle intersection checking
+
+    unsigned int size_tri = tri_considered.size();
+
+    bool use_gpu;
+    ros::param::get("~/algorithm/use_gpu", use_gpu);
+
+    float *tri_distance;
+    tri_distance = (float*)malloc(size_tri*sizeof(float));
+
+    bool *result;
+    float point_x, point_y;
+    float *vertex0_x, *vertex0_y, *vertex1_x, *vertex1_y, *vertex2_x, *vertex2_y;
+
+    //Allocate memory for c arrays
+    vertex0_x = (float*)malloc(size_tri*sizeof(float));
+    vertex0_y = (float*)malloc(size_tri*sizeof(float));
+    vertex1_x = (float*)malloc(size_tri*sizeof(float));
+    vertex1_y = (float*)malloc(size_tri*sizeof(float));
+    vertex2_x = (float*)malloc(size_tri*sizeof(float));
+    vertex2_y = (float*)malloc(size_tri*sizeof(float));
+    result = (bool*)malloc(size_tri*sizeof(bool));
+    
+    //Fill c array to pass to the gpu
+    int i=0;
+    for(auto tri: tri_considered)
+    {
+        float max_dist = 0;
+        //Use the maximum distance between triangle and vp as the distance value
+        for(auto v: tri->vertices)
+        {
+            if(v.get<2>() > max_dist) max_dist = v.get<2>();
+        }
+        tri_distance[i] = max_dist;
+        vertex0_x[i] = tri->vertices[0].get<0>();
+        vertex0_y[i] = tri->vertices[0].get<1>();
+        vertex1_x[i] = tri->vertices[1].get<0>();
+        vertex1_y[i] = tri->vertices[1].get<1>();
+        vertex2_x[i] = tri->vertices[2].get<0>();
+        vertex2_y[i] = tri->vertices[2].get<1>();
+        i++;
+    }
+
+    //Invoke function that handles GPU memory and launches CUDA-Kernels
+    for(auto point: points_checked)
+    {
+        point_x = point.second->vertex.get<0>();
+        point_y = point.second->vertex.get<1>();
+
+        within_triangle_query_gpu_driver(size_tri,THREADS_PER_BLOCK,
+                    point_x,
+                    point_y,
+                    vertex0_x,
+                    vertex0_y,
+                    vertex1_x,
+                    vertex1_y,
+                    vertex2_x,
+                    vertex2_y,
+                    result,
+                    use_gpu);
+
+        //Check if one of the result entries is occluded
+        for(int i=0; i<size_tri; i++)
+        {
+            if((result[i] == true) && (point.second->vertex.get<2>() > tri_distance[i]))
+            {
+                point.second->is_occluded = true;
+                break;
+            }
+        }
+    }
+
+    free(vertex0_x);
+    free(vertex0_y);
+    free(vertex1_x);
+    free(vertex1_y);
+    free(vertex2_x);
+    free(vertex2_y);
+    free(result);
+
+    free(tri_distance);
+}
+
+void OcclusionCulling::occlusionCheck_usingBoost(std::map<std::tuple<float, float, float>, PointSpherical *> &points_checked, 
+                            std::unordered_set<TriSpherical *> &tri_considered)
+{
+    // Iterate through point set to check if they are occluded
+    for(auto point: points_checked)
+    {
+        for(auto tri: tri_considered)
+        {
+            //if facet is closer to camera than point
+            if(tri->mean_distance_to_vp < point.second->vertex.get<2>())
+            {
+                if(OcclusionCulling::geometryIsWithin(dropZCoordinate(point.second->vertex), tri))
+                {
+                    point.second->is_occluded = true;
+                    
+                    break;
+                }
+            }
+        }
+    }
 }
 
 char OcclusionCulling::geometryIsWithin(TriSpherical* tri_sp_pot_ocludee, TriSpherical* tri_sp_occluder)
