@@ -4,6 +4,9 @@ project(koptplanner)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
+
+FIND_PACKAGE(CUDA REQUIRED)
+
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
@@ -40,6 +43,12 @@ generate_messages(
   geometry_msgs
   shape_msgs
 )
+
+## NVidia CUDA setup
+SET(CUDA_NVCC_FLAGS "-arch=compute_50" CACHE STRING "nvcc flags" FORCE)
+SET (CUDA_VERBOSE_BUILD ON CACHE BOOL "nvcc verbose" FORCE)
+SET(LIB_TYPE STATIC) 
+CUDA_ADD_LIBRARY(CudaLib ${LIB_TYPE} src/within_triangle_query.cu)
 
 ###################################
 ## catkin specific configuration ##
@@ -195,8 +204,11 @@ add_executable(plan
   include/LKH-2.0.7/SRC/WriteTour.c
 )
 
+ADD_DEPENDENCIES(plan CudaLib)
+
 ## Specify libraries to link a library or executable target against
 target_link_libraries(plan
   ${optec_LIBRARIES}
   ${catkin_LIBRARIES}
+  CudaLib
 )
