@@ -79,8 +79,8 @@ std::unordered_set<tri_t*> OcclusionCulling::getUnoccludedFacets(Eigen::Matrix<f
         } 
     }
 
-    occlusionCheck_usingBoost(points_sp, tri_sp_container);
-    // occlusionCheck_GPU(points_sp, tri_sp_container);
+    //occlusionCheck_usingBoost(points_sp, tri_sp_container);
+    occlusionCheck_GPU(points_sp, tri_sp_container);
     
     tri_to_return = tri_checked;
 
