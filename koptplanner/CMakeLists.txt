@@ -48,7 +48,7 @@ generate_messages(
 SET(CUDA_NVCC_FLAGS "-arch=compute_50" CACHE STRING "nvcc flags" FORCE)
 SET (CUDA_VERBOSE_BUILD ON CACHE BOOL "nvcc verbose" FORCE)
 SET(LIB_TYPE STATIC) 
-CUDA_ADD_LIBRARY(CudaLib ${LIB_TYPE} src/within_triangle_query.cu)
+CUDA_ADD_LIBRARY(CudaLib ${LIB_TYPE} src/OcclusionCullingGPU.cu)
 
 ###################################
 ## catkin specific configuration ##
@@ -102,6 +102,7 @@ add_executable(plan
   src/DistanceCulling.cpp
   src/HiddenSurfaceRemoval.cpp
   src/VPsampling.cpp
+  src/Coordinates.cpp
   include/planner_rrts/kdtree.c
   include/LKH-2.0.7/SRC/LKHmain.c
   include/LKH-2.0.7/SRC/Activate.c

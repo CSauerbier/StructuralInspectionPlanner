@@ -41,6 +41,8 @@
  long time_RRTS;
  long time_RRTS_req;
  long time_LKH;
+ long time_occlusion_query;
+ long time_visibility_determination;
 #endif
 long time_start;
 
@@ -225,6 +227,8 @@ bool plan(koptplanner::inspection::Request  &req,
   time_RRTS = 0;
   time_RRTS_req = 0;
   time_LKH = 0;
+  time_occlusion_query = 0;
+  time_visibility_determination = 0;
 #endif
   time_start = 0;
   problemBoundary.setNumDimensions(3);
@@ -692,6 +696,8 @@ bool plan(koptplanner::inspection::Request  &req,
   ROS_INFO("Initial RRT* time consumption:\t\t%i ms", (int)(time_RRTS/1000));
   ROS_INFO("Distance evaluation time:\t\t%i ms", (int)(time_RRTS_req/1000));
   ROS_INFO("Viewpoint sampling time consumption:\t%i ms", (int)(time_DBS/1000));
+  ROS_INFO("Occlusion query time:\t\t\t%i ms", (int)(time_occlusion_query/1000));
+  ROS_INFO("Visibility determination time:\t\t%i ms", (int)(time_visibility_determination/1000));
 #endif
 
   if(koptError == SUCCESSFUL)

@@ -15,6 +15,17 @@
 #include "Culling/FrustumCulling.h"
 #include "Visualization/Visualization.h"
 #include "Culling/DistanceCulling.h"
+#include "Culling/Coordinates.hpp"
+#include <map>
+#include <math.h>
+#include <time.h>
+#include <stdexcept>
+
+
+#ifdef __TIMING_INFO__
+extern long time_occlusion_query;
+extern long time_visibility_determination;
+#endif
 
 typedef bool vis_mat_entry_t;
 

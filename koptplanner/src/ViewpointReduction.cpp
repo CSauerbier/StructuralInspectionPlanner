@@ -1,7 +1,5 @@
-#ifndef __VIEWPOINTREDUCTION_CPP__
-#define __VIEWPOINTREDUCTION_CPP__
-
 #include "ViewpointReduction/ViewpointReduction.h"
+
 
 void VisibilityMatrix::init(size_t tri_size, size_t vp_size)
 {
@@ -51,41 +49,204 @@ ViewpointReduction::ViewpointReduction(std::vector<tri_t*> tri_checked, std::vec
 //TO-DO: Handle tri-Entries that correspond to required view points (Member variable "Fixpoint" = true)
 void ViewpointReduction::generateVisibilityMatrix()
 {
-    int progress_old = 0;
-    bool display_progress;
-    ros::param::get("~/display/progress", display_progress);
-    //Viewpoint-Counter, columns
-    for(int vp = 0; vp < this->vp_count; vp++)
-    {
-        if(display_progress)
+    bool moeller_trumbore_occlusion_check;
+    ros::param::get("~/algorithm/moeller_trumbore_occlusion_check", moeller_trumbore_occlusion_check);
+
+    #ifdef __TIMING_INFO__
+    timeval time;
+    gettimeofday(&time, NULL);
+    time_visibility_determination -= time.tv_sec * 1000000 + time.tv_usec;
+    #endif
+
+    if(moeller_trumbore_occlusion_check)
+    {    
+        //Holds a single instance of all mesh vertices with the sum of their coordinate components as key.
+        //TO-DO: Identification is not unique
+        std::map<double, CartesianCoordinates*> vertices_map;
+
+        //Keeps track of which triangles comprise a given point
+        std::map<double, std::unordered_set<tri_t*>> vertex_triangle_links;
+
+        //To store all triangle objects created
+        std::vector<TriangleVertices*> tri_vert_vect;
+
+        //Holds all objects created to assure complete deletion
+        std::vector<CartesianCoordinates*> coord_vect;
+
+        //Stores all vertices of the mesh in their respective data structures
+        for(auto tri: this->triangles)
         {
-            int progress = (int)vp*100/this->vp_count;
-            if(progress != progress_old) ROS_INFO("Progress: %i\t%%", progress);
-            progress_old = progress;
+            std::array<CartesianCoordinates*, 3> vertices;
+            //Create dynamic instances to allow for object copy
+            vertices[0] = new CartesianCoordinates(tri->x1[0], tri->x1[1], tri->x1[2]);
+            vertices[1] = new CartesianCoordinates(tri->x2[0], tri->x2[1], tri->x2[2]);
+            vertices[2] = new CartesianCoordinates(tri->x3[0], tri->x3[1], tri->x3[2]);
+            tri_vert_vect.push_back(new TriangleVertices(*vertices[0], *vertices[1], *vertices[2]));
+
+            for(auto vertex: vertices)
+            {
+                coord_vect.push_back(vertex);
+                double key = vertex->x + vertex->y + vertex->z;
+                //Insert to map if not already present
+                vertices_map[key] = vertex;
+
+                //Add triangle to the list of triangles attached to this point
+                vertex_triangle_links[key].insert(tri);
+            }
+        }
+
+        //Transfer map contents to vector of unique vertices
+        std::vector<CartesianCoordinates*> vertices_vect;
+        for(auto entry: vertices_map)
+        {
+            vertices_vect.push_back(entry.second);
+        }
+
+        //Convert view point array to fit interface
+        std::vector<CartesianCoordinates*> vp_vect(this->vp_count, nullptr);
+        for(int i=0; i<this->vp_count; i++)
+        {
+            vp_vect[i] = new CartesianCoordinates(this->view_points[i][0], this->view_points[i][1], this->view_points[i][2]);
         }
         
-        std::unordered_set<tri_t*> vis_set(this->triangles.begin(), this->triangles.end());
-        std::unordered_set<tri_t*> vis_set_within_range;
+        int progress_old = 0;
+        bool display_progress, use_gpu;
+        ros::param::get("~/display/progress", display_progress);
+        ros::param::get("~/algorithm/use_gpu", use_gpu);
 
-        vis_set = FrustumCulling::getFacetsWithinFrustum(vis_set, this->view_points[vp], true);
+        OcclusionCulling::initializeMoellerTrumbore(tri_vert_vect, vertices_vect, vp_vect, use_gpu);
 
-        vis_set = BackfaceCulling::getFrontFacets(this->view_points[vp], vis_set);
-
-        vis_set_within_range = DistanceCulling::getFacetsWithinDistance(vis_set, this->view_points[vp]);
-
-        vis_set = OcclusionCulling::getUnoccludedFacets(this->view_points[vp], vis_set_within_range, vis_set);
-
-        StateVector vp_tmp = (this->view_points[vp]);
-        //Triangle-Counter, rows
-        for (int tri = 0; tri < this->triangles.size(); tri++)
+        for(int vp = 0; vp < this->vp_count; vp++)
         {
-            if(vis_set.find(this->triangles.at(tri)) != vis_set.end())
+            if(display_progress)
             {
-                this->vis_matrix.setEntry(tri, vp, this->triangles.at(tri)->isVisible(this->view_points[vp]));
+                int progress = (int)vp*100/this->vp_count;
+                if(progress != progress_old) ROS_INFO("Progress: %i\t%%", progress);
+                progress_old = progress;
             }
-            else
+
+            auto view_point = this->view_points[vp];
+
+            #ifdef __TIMING_INFO__
+            timeval time_occlusion;
+            gettimeofday(&time_occlusion, NULL);
+            time_occlusion_query -= time_occlusion.tv_sec * 1000000 + time_occlusion.tv_usec;
+            #endif
+
+            //Call CUDA function to solve the occlusion query
+            std::vector<bool> points_occlusion_result = OcclusionCulling::occlusionCheck_GPU_MoellerTrumbore(vp);
+
+            #ifdef __TIMING_INFO__
+            gettimeofday(&time_occlusion, NULL);
+            time_occlusion_query += time_occlusion.tv_sec * 1000000 + time_occlusion.tv_usec;
+            #endif
+
+            if(points_occlusion_result.size() != vertices_vect.size()) std::runtime_error("Size mismatch");
+
+            //Assign visibility information to corresponding triangles. Using set to avoid duplicates. Initializing with all triangles considered
+            std::unordered_set<tri_t*> visible_triangles(this->triangles.begin(), this->triangles.end());
+            for(int i=0; i<vertices_vect.size(); i++)
             {
-                this->vis_matrix.setEntry(tri, vp, false);
+                //If the vertex is occluded, erase all the triangles attached to it from the visible_triangles vector
+                if(!points_occlusion_result[i])
+                {
+                    auto vertex = vertices_vect[i];
+                    float key = vertex->x + vertex->y + vertex->z;
+                    auto linked_tris = vertex_triangle_links[key];
+                    for(auto tri: linked_tris)
+                    {
+                        visible_triangles.erase(tri);
+                    }
+                }
+            }
+
+            //Boolean vector whose entries state whether the triangle at the same index is visible or not
+            std::vector<bool> triangle_occlusion_result(this->triangles.size(), false);
+            for(int i=0; i<this->triangles.size(); i++)
+            {
+                if(visible_triangles.find(this->triangles[i]) != visible_triangles.end())
+                {
+                    //Triangle at index i in original aray is visible
+                    triangle_occlusion_result[i] = true;
+                }
+            }   
+
+            //Transfer result to visibility matrix
+            for (int tri = 0; tri < this->triangles.size(); tri++)
+            {
+                if(triangle_occlusion_result[tri])
+                {
+                    this->vis_matrix.setEntry(tri, vp, this->triangles.at(tri)->isVisible(this->view_points[vp]));
+                }
+                else
+                {
+                    this->vis_matrix.setEntry(tri, vp, false);
+                }
+            }
+        }
+        //Delete data structures for occlusion query
+        OcclusionCulling::finalizeMoellerTrumbore();
+
+        //Delete all objects
+        for(auto coord: coord_vect)
+        {
+            delete coord;
+            coord=NULL;
+        }
+        for(auto vp: vp_vect)
+        {
+            delete vp;
+            vp = NULL;
+        }
+    }
+
+    else
+    {    
+        int progress_old = 0;
+        bool display_progress;
+        ros::param::get("~/display/progress", display_progress);
+        //Viewpoint-Counter, columns
+        for(int vp = 0; vp < this->vp_count; vp++)
+        {
+            if(display_progress)
+            {
+                int progress = (int)vp*100/this->vp_count;
+                if(progress != progress_old) ROS_INFO("Progress: %i\t%%", progress);
+                progress_old = progress;
+            }
+            
+            std::unordered_set<tri_t*> vis_set(this->triangles.begin(), this->triangles.end());
+            std::unordered_set<tri_t*> vis_set_within_range;
+
+            vis_set = FrustumCulling::getFacetsWithinFrustum(vis_set, this->view_points[vp], true);
+
+            vis_set = BackfaceCulling::getFrontFacets(this->view_points[vp], vis_set);
+
+            vis_set_within_range = DistanceCulling::getFacetsWithinDistance(vis_set, this->view_points[vp]);
+
+            #ifdef __TIMING_INFO__
+            timeval time_occlusion;
+            gettimeofday(&time_occlusion, NULL);
+            time_occlusion_query -= time_occlusion.tv_sec * 1000000 + time_occlusion.tv_usec;
+            #endif
+
+            vis_set = OcclusionCulling::getUnoccludedFacets(this->view_points[vp], vis_set_within_range, vis_set);
+
+            #ifdef __TIMING_INFO__
+            gettimeofday(&time_occlusion, NULL);
+            time_occlusion_query += time_occlusion.tv_sec * 1000000 + time_occlusion.tv_usec;
+            #endif
+
+            for (int tri = 0; tri < this->triangles.size(); tri++)
+            {
+                if(vis_set.find(this->triangles.at(tri)) != vis_set.end())
+                {
+                    this->vis_matrix.setEntry(tri, vp, this->triangles.at(tri)->isVisible(this->view_points[vp]));
+                }
+                else
+                {
+                    this->vis_matrix.setEntry(tri, vp, false);
+                }
             }
         }
     }
@@ -98,6 +259,11 @@ void ViewpointReduction::generateVisibilityMatrix()
     #endif
 
     this->iteration ++;
+
+    #ifdef __TIMING_INFO__
+    gettimeofday(&time, NULL);
+    time_visibility_determination += time.tv_sec * 1000000 + time.tv_usec;
+    #endif
 }
 
 int ViewpointReduction::getNoOfSelectedVPs()
@@ -344,5 +510,3 @@ std::vector<tri_t*> VisibilityContainer::getTriVect()
 {
     return this->triangle_vector;
 }
-
-#endif

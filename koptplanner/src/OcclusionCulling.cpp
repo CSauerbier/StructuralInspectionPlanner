@@ -322,12 +322,27 @@ bool OcclusionCulling::geometryIsWithin(bg::model::point<float, 2, bg::cs::carte
     return bg::within(point_under_test, poly);
 }
 
+void OcclusionCulling::initializeMoellerTrumbore(std::vector<TriangleVertices*> &tri_v, 
+                                                std::vector<CartesianCoordinates*> &vertices, 
+                                                std::vector<CartesianCoordinates*> &view_points, 
+                                                bool use_gpu)
+{
+    setGeometryData_interface(tri_v, vertices, view_points, use_gpu);
+}
+
+std::vector<bool> OcclusionCulling::occlusionCheck_GPU_MoellerTrumbore(int vp_number)
+{
+    return occlusionCheck_interface(vp_number);
+}
+
+void OcclusionCulling::finalizeMoellerTrumbore()
+{
+    deleteGeometryData_interface();
+}
+
 void OcclusionCulling::occlusionCheck_GPU(std::map<std::tuple<float, float, float>, PointSpherical *> &points_checked, 
                             std::unordered_set<TriSpherical *> &tri_considered)
 {
-    //TO-DO: Rethink use of stl containers. Too slow? Specifically passing by value since copies are inefficient
-    //TO-DO: Do not convert to spherical, do occlusion check as ray triangle intersection checking
-
     unsigned int size_tri = tri_considered.size();
 
     bool use_gpu;
@@ -375,7 +390,7 @@ void OcclusionCulling::occlusionCheck_GPU(std::map<std::tuple<float, float, floa
         point_x = point.second->vertex.get<0>();
         point_y = point.second->vertex.get<1>();
 
-        within_triangle_query_gpu_driver(size_tri,THREADS_PER_BLOCK,
+        within_triangle_query_gpu_driver(size_tri,
                     point_x,
                     point_y,
                     vertex0_x,

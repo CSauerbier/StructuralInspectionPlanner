@@ -11,14 +11,20 @@
 #include "ros/ros.h"
 #include <tf2_eigen/tf2_eigen.h>
 #include <tf2/LinearMath/Transform.h>
-
-#define THREADS_PER_BLOCK 1024
+#include "Culling/Coordinates.hpp"
 
 //TO-DO: Documentation
 
 namespace bg = boost::geometry;
 
-int *within_triangle_query_gpu_driver(int num, int threads ,
+void setGeometryData_interface(std::vector<TriangleVertices*> &tri_v, 
+                                std::vector<CartesianCoordinates*> &vertices, 
+                                std::vector<CartesianCoordinates*> view_points, 
+                                bool use_gpu);
+void deleteGeometryData_interface();
+std::vector<bool> occlusionCheck_interface(int vp_number);
+
+int *within_triangle_query_gpu_driver(int num,
     float p_x,
     float p_y,
     float *v0_x, 
@@ -99,6 +105,31 @@ namespace OcclusionCulling
      * */
     void occlusionCheck_GPU(std::map<std::tuple<float, float, float>, PointSpherical *> &points_checked, 
                             std::unordered_set<TriSpherical *> &tri_considered);
+    
+    /**
+     * Calls interface to CUDA code to transfer geometry data
+     * \param tri_v Vector of potential occludees to be checked
+     * \param vertices Vector of points to be checked for occlusion
+     * \param view_points Vector of coordinates of view point to be checked
+     * \param use_gpu Specify whether or not to perform the operations on the GPU
+     */
+    void initializeMoellerTrumbore(std::vector<TriangleVertices*> &tri_v, 
+                                    std::vector<CartesianCoordinates*> &vertices, 
+                                    std::vector<CartesianCoordinates*> &view_points, 
+                                    bool use_gpu);
+    
+    /**
+     * Calls interface to CUDA code to perform an occlusion check from the perspective specified the given view point number
+     * \param vp_number Index of the vector of view points passed during previous initialization that is to be checked
+     * \returns Boolean vector that states whether the entries vertices vector previously passed are visible
+     */
+    std::vector<bool> occlusionCheck_GPU_MoellerTrumbore(int vp_number);
+
+    /**
+     * Clears geometry data structures that were created in initialization routine
+     */
+    void finalizeMoellerTrumbore();
+
     //Checks if triangle in first argument lies within triangle of second argument
     char geometryIsWithin(TriSpherical* tri_sp_pot_ocludee, TriSpherical* tri_sp_occluder);
 
