@@ -4,11 +4,12 @@
 koptplanner/data/VisibilityMatrix.m
 koptplanner/data/latestPath.csv
 koptplanner/data/tourlength.m
+koptplanner/data/report.log
 request/meshes/Original/*
 request/meshes/Alternative/*
 request/meshes/cache/*
 request/visualization/inspectionScenario.m
-koptplanner/data/*
+
 
 #Temporary backup files
 *~

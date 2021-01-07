@@ -583,8 +583,12 @@ bool plan(koptplanner::inspection::Request  &req,
 
     vp_index = vpRedCombined.getNoOfSelectedVPs();
 
-    //TO-DO_old: Sleep as parameter for manual sequential inspection
     /*  VISUALIZATION     */
+    //Capture visualization time to subtract from overall time
+    long time_visualization = 0;
+    gettimeofday(&time, NULL);
+    time_visualization -= time.tv_sec * 1000000 + time.tv_usec;
+
     ros::Rate delayRate(20);
     std::vector<VisibilityContainer> temp_vc = vpRedCombined.getSelectedVPs();
     ROS_INFO("No. of VPs overall: %li", temp_vc.size());
@@ -594,8 +598,11 @@ bool plan(koptplanner::inspection::Request  &req,
       delayRate.sleep();
       Singleton<FacetVisualization>().visualizeTriangles(temp_vc.at(i).getTriVect());
       delayRate.sleep();      
-
     }
+
+    gettimeofday(&time, NULL);
+    time_visualization += time.tv_sec * 1000000 + time.tv_usec;
+    millisecStart += time_visualization/1000;
 
     ROS_INFO("Viewpoint-Selection finished");
 

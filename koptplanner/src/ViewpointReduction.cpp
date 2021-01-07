@@ -254,7 +254,7 @@ void ViewpointReduction::generateVisibilityMatrix()
     #ifdef GENERATE_MATLAB_FILE
     if(this->iteration == 0)
     {
-        this->exportMatlabData("VisibilityMatrix", VP, this->vis_matrix.cols());
+        this->exportMatlabData("VisibilityMatrix", this->view_points, this->vp_count);
     }
     #endif
 
@@ -283,51 +283,39 @@ std::vector<tri_t *> ViewpointReduction::getUncoveredTriangles()
 
 void ViewpointReduction::solveSetCoveringProbGreedy()
 {
-    std::vector<bool> triangle_covered(this->vis_matrix.getNoTris(), false);        //to keep track whether or not the facet seen by some VP
+    //to keep track whether or not the facet seen by any VP
+    std::vector<bool> triangle_covered(this->vis_matrix.getNoTris(), false);
     
     bool all_tris_covered;
     int no_uncovered_tris = 0;
     int itn = 0;
     do
     {
-        // this->computeSumOfVisibleTriangles();    //TO-DO
-        
-        //TO-DO: Improve handling of no longer converging VP-Reduction
         //Determine VP that sees most surface area
         int max_area_vp;
-        int oldIndex = max_area_vp;
-        max_area_vp = this->findNextBestVP();
-        if (oldIndex == max_area_vp)
+        int old_max_area_vp = max_area_vp;
+        max_area_vp = this->findNextBestVP(triangle_covered);   //TO-DO:
+
+        //If the same view point is found in two consecutive iterations, the search is finished
+        if (old_max_area_vp == max_area_vp)
         {
-            for(int i=0; i<triangle_covered.size(); i++)
-            {
-                if(triangle_covered.at(i) == false) 
-                {
-                    this->uncovered_triangles.push_back(this->triangles.at(i));
-                }
-            }
+            //Store remaining facets that are not visible from any of the chosen view points
+            this->setUncoveredTriangles(triangle_covered);
             ROS_INFO("Viewpoint Reduction no longer converging at iteration %i, %i uncovered facets", itn, no_uncovered_tris);
             break;
         } 
 
         // Stop criterion for if VP information gain is below a threshold
-        //looping over triangles
         std::vector<tri_t*> tris_seen;
         for(int tri=0; tri<this->vis_matrix.getNoTris(); tri++){
-            if(this->vis_matrix.getEntry(tri,max_area_vp) == true)
+            if(this->vis_matrix.getEntry(tri,max_area_vp) == true && !triangle_covered[tri])
             {
                 tris_seen.push_back(this->triangles.at(tri));
             }
         }
         if(this->computeSurfaceArea(tris_seen) < this->surface_area*this->area_stop_criterion)
         {
-            for(int i=0; i<triangle_covered.size(); i++)
-            {
-                if(triangle_covered.at(i) == false) 
-                {
-                    this->uncovered_triangles.push_back(this->triangles.at(i));
-                }
-            }
+            this->setUncoveredTriangles(triangle_covered);
             ROS_INFO("Stop criterion reached at iteration %i, %i uncovered facets", itn, no_uncovered_tris);
             break;
         }
@@ -339,13 +327,6 @@ void ViewpointReduction::solveSetCoveringProbGreedy()
             {
                 triangle_covered.at(tri) = true;
                 tris_temp.push_back(this->triangles.at(tri));
-                
-                //Once a facet is seen by a VP that is already selected, set the row to false
-                //so that it does not contribute to the score of next VPs
-                for(int vp=0; vp<this->vis_matrix.getNoVPs(); vp++)
-                {
-                    this->vis_matrix.setEntry(tri,vp, false);
-                }
             }
         }
 
@@ -366,16 +347,6 @@ void ViewpointReduction::solveSetCoveringProbGreedy()
 
         itn++;
     }while(all_tris_covered == false);
-
-    //Debug////////////////////////
-    std::stringstream ss;
-    ss << "Viewpoints kept:\t";
-    for (int i=0; i<viewpoints_kept.size(); i++)
-    {
-        ss << viewpoints_kept.at(i).getVPNum() << "\t";
-    }
-    ROS_INFO("%s",ss.str().c_str());
-    ///////////////////////////////
 }
 
 void ViewpointReduction::removeRedundantVPs()
@@ -461,17 +432,25 @@ void ViewpointReduction::setTriangleSurfaceAreas()
 
 int ViewpointReduction::findNextBestVP()
 {  
+    std::vector<bool> empty_vec (this->triangles.size(), false);
+    return this->findNextBestVP(empty_vec);
+}
+
+int ViewpointReduction::findNextBestVP(std::vector<bool> &skip_mask)
+{  
+    if(skip_mask.size() != this->triangles.size())
+    {
+        throw std::runtime_error("Size of skip mask must be equal to the number of triangles it is applied on");
+    }
     std::vector<float> vp_area_covered(this->vp_count, 0.0);
 
-    //Viewpoint-Counter, columns
-    for(int i=0; i<this->vp_count; i++)
+    for(int vp=0; vp<this->vp_count; vp++)
     {
-        //Triangle-Counter, rows
-        for(int j=0; j<this->triangles.size(); j++)
+        for(int tri=0; tri<this->triangles.size(); tri++)
         {
-            if(this->vis_matrix.getEntry(j,i))
+            if(this->vis_matrix.getEntry(tri,vp) && !skip_mask[tri])
             {
-                vp_area_covered.at(i) += this->triangle_surface_areas.at(j);
+                vp_area_covered.at(vp) += this->triangle_surface_areas.at(tri);
             }
         }
     }
@@ -488,6 +467,22 @@ float ViewpointReduction::computeSurfaceArea(std::vector<tri_t*> tri_vct)
     return sum;
 }
 
+void ViewpointReduction::setUncoveredTriangles(std::vector<bool> triangle_covered)
+{
+    if(triangle_covered.size() != this->triangles.size())
+    {
+        throw std::runtime_error("Incorrect size of argument: Cannot set member uncovered_triangles");
+    }
+    int i = 0;
+    for(auto entry: triangle_covered)
+    {
+        if(entry == false)
+        {
+            this->uncovered_triangles.push_back(this->triangles[i]);
+        }
+        i++;
+    }
+}
 
 VisibilityContainer::VisibilityContainer(int vp_num, StateVector *VP, std::vector<tri_t*> tri)
 {

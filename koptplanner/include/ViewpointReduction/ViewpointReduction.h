@@ -131,7 +131,9 @@ private:
     void exportMatlabData(std::string fname, StateVector * VP, int noOfVPs);
     void setTriangleSurfaceAreas();
     int findNextBestVP();
+    int findNextBestVP(std::vector<bool> &triangle_covered);
     float computeSurfaceArea(std::vector<tri_t*> tri_vct);
+    void setUncoveredTriangles(std::vector<bool>);
 public:
     /** 
      * Creates a ViewpointReduction-Object that processes mesh visibility for view points, taking into account occlusion, 
