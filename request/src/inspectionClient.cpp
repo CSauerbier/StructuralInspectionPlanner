@@ -19,6 +19,7 @@
 #include "request/MeshResolutionModification.h"
 
 std::vector<nav_msgs::Path> * readSTLfile(std::string name);
+std::vector<nav_msgs::Path> * readSTLfile(std::string name, double *max_x, double *max_y, double *max_z, double *min_x, double *min_y, double *min_z);
 
 int main(int argc, char **argv)
 {
@@ -44,14 +45,16 @@ int main(int argc, char **argv)
   ros::Rate r2(1.0);
   r2.sleep();
 
+   double max_x, max_y, max_z, min_x, min_y, min_z; //TO-DI: Move down, consider array
+
   /* define the bounding box */
   koptplanner::inspection srv;
   srv.request.spaceSize.push_back(2000);
   srv.request.spaceSize.push_back(2000);
   srv.request.spaceSize.push_back(2000);
-  srv.request.spaceCenter.push_back(0);
-  srv.request.spaceCenter.push_back(0);
-  srv.request.spaceCenter.push_back(0);
+  // srv.request.spaceCenter.push_back(0);
+  // srv.request.spaceCenter.push_back(0);
+  // srv.request.spaceCenter.push_back(0);
   geometry_msgs::Pose reqPose;
 
   /* starting pose*/
@@ -111,7 +114,10 @@ int main(int argc, char **argv)
 
 
   /* read STL file and publish to rviz */
-  std::vector<nav_msgs::Path> * mesh = readSTLfile(fine_file_path);
+  std::vector<nav_msgs::Path> * mesh = readSTLfile(fine_file_path, &max_x, &max_y, &max_z, &min_x, &min_y, &min_z);
+  srv.request.spaceCenter.push_back((max_x+min_x)/2);
+  srv.request.spaceCenter.push_back((max_y+min_y)/2);
+  srv.request.spaceCenter.push_back((max_z+min_z)/2);
   ROS_INFO("mesh size = %i", (int)mesh->size());
   for(std::vector<nav_msgs::Path>::iterator it = mesh->begin(); it != mesh->end() && ros::ok(); it++)
   {
@@ -219,6 +225,14 @@ int main(int argc, char **argv)
 */
 std::vector<nav_msgs::Path> * readSTLfile(std::string name)
 {
+  return readSTLfile(name, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
+}
+
+/**
+*  \brief This function reads an ACII STL file for inspection planning. Parameters other than name are filled with outmost mesh mesh coordinates
+*/
+std::vector<nav_msgs::Path> * readSTLfile(std::string name, double *max_x, double *max_y, double *max_z, double *min_x, double *min_y, double *min_z)
+{
   std::vector<nav_msgs::Path> * mesh = new std::vector<nav_msgs::Path>;
   std::fstream f;
   f.open(name.c_str());
@@ -301,6 +315,16 @@ std::vector<nav_msgs::Path> * readSTLfile(std::string name)
     p.header.seq = k;
     mesh->push_back(p);
     k++;
+  }
+  if(max_x != nullptr && max_y != nullptr && max_z != nullptr && min_x != nullptr && min_y != nullptr && min_z != nullptr)
+  {
+    //TO-DO: Consider using array
+    *max_x = maxX;
+    *max_y = maxY;
+    *max_z = maxZ;
+    *min_x = minX;
+    *min_y = minY;
+    *min_z = minZ;
   }
   free(line);
   f.close();

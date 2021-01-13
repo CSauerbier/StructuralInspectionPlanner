@@ -6,6 +6,7 @@
 #include "visualization_msgs/MarkerArray.h"
 #include "koptplanner/ptpPlanner.hpp"
 #include "Visualization/Colors.h"
+#include "Culling/Coordinates.hpp"
 
 template <typename T>
 T& Singleton() 
@@ -31,7 +32,7 @@ public:
 
   static Visualization& instance();
   void push_back(tri_t* tri);
-  static void increment();
+  static void nextVisualization();
 };
 
 class FacetVisualization: public Visualization
@@ -47,6 +48,13 @@ class CameraVisualization: public Visualization
 public:
   void visualizeCameras(StateVector *view_point);
   friend CameraVisualization& Singleton<CameraVisualization>();
+};
+
+class PointVisualization: public Visualization
+{
+public:
+  void visualizePoints(std::vector<CartesianCoordinates*> &points);
+  friend PointVisualization &Singleton<PointVisualization>();
 };
 
 #endif

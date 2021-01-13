@@ -43,7 +43,15 @@ ViewpointReduction::ViewpointReduction(std::vector<tri_t*> tri_checked, std::vec
 
     this->generateVisibilityMatrix();
 
-    this->solveSetCoveringProbGreedy();
+    ros::param::get("~/algorithm/set_cover_lagrangian_relax", this->use_set_cover_lagrangian_relax);
+    if(this->use_set_cover_lagrangian_relax)
+    {
+        this->solveSetCoveringProbLagrangianRelax();//TO-DO:
+    }
+    else
+    {
+        this->solveSetCoveringProbGreedy();
+    }
 }
 
 //TO-DO: Handle tri-Entries that correspond to required view points (Member variable "Fixpoint" = true)
@@ -280,7 +288,6 @@ std::vector<tri_t *> ViewpointReduction::getUncoveredTriangles()
 {
     return this->uncovered_triangles;
 }
-
 void ViewpointReduction::solveSetCoveringProbGreedy()
 {
     //to keep track whether or not the facet seen by any VP
@@ -289,6 +296,7 @@ void ViewpointReduction::solveSetCoveringProbGreedy()
     bool all_tris_covered;
     int no_uncovered_tris = 0;
     int itn = 0;
+    std::vector<int> vps_kept;
     do
     {
         //Determine VP that sees most surface area
@@ -320,15 +328,15 @@ void ViewpointReduction::solveSetCoveringProbGreedy()
             break;
         }
 
-        std::vector<tri_t*> tris_temp;
+        // std::vector<tri_t*> tris_temp;
         //looping over triangles
         for(int tri=0; tri<this->vis_matrix.getNoTris(); tri++){
             if(this->vis_matrix.getEntry(tri,max_area_vp) == true)
             {
                 triangle_covered.at(tri) = true;
-                tris_temp.push_back(this->triangles.at(tri));
+                // tris_temp.push_back(this->triangles.at(tri));
             }
-        }
+        }    //TO-DO:
 
         //Check if all facets are seen by some VP
         all_tris_covered = true;
@@ -342,13 +350,15 @@ void ViewpointReduction::solveSetCoveringProbGreedy()
             }
         }
 
-        VisibilityContainer vc_temp(max_area_vp, &this->view_points[max_area_vp], tris_temp);
-        this->viewpoints_kept.push_back(vc_temp);
+        // VisibilityContainer vc_temp(max_area_vp, &this->view_points[max_area_vp], tris_temp);   //TO-DO
+        // this->viewpoints_kept.push_back(vc_temp);
+        vps_kept.push_back(max_area_vp);
 
         itn++;
     }while(all_tris_covered == false);
-}
 
+    this->setViewpointsKept(vps_kept);
+}
 void ViewpointReduction::removeRedundantVPs()
 {
 	int iter = 0;
@@ -483,6 +493,77 @@ void ViewpointReduction::setUncoveredTriangles(std::vector<bool> triangle_covere
         i++;
     }
 }
+
+void ViewpointReduction::solveSetCoveringProbLagrangianRelax()
+{
+    //TO-DO: Consider defining custom message
+    //TO-DO: Collect timing info about this
+    //Convert visibility matrix to message
+
+    ros::NodeHandle n;
+	// ros::Publisher pub = n.advertise<std_msgs::Int8MultiArray>("VisibilityMatrix", 100);
+    ros::ServiceClient client = n.serviceClient<koptplanner::SetCoverSolver>("set_cover_solver");
+
+    koptplanner::SetCoverSolver srv;
+
+    int no_vps = this->vis_matrix.getNoVPs();
+    int no_tris = this->vis_matrix.getNoTris();
+
+    std_msgs::Int8MultiArray msg;
+    //Add 2 Dimensions for 2D-Array
+    msg.layout.dim.push_back(std_msgs::MultiArrayDimension());
+    msg.layout.dim[0].size = no_tris;
+    msg.layout.dim[0].stride = no_vps*no_tris;
+    msg.layout.dim[0].label = "tri";
+
+    msg.layout.dim.push_back(std_msgs::MultiArrayDimension());
+    msg.layout.dim[1].size = no_vps;
+    msg.layout.dim[1].stride = no_vps;
+    msg.layout.dim[1].label = "vp";
+
+    //Fill with data
+    //TO-DO: Consider inverting rows/columns
+    //TO-DO: Vismat-Getters inline? Probably compiler does that
+    for(int vp_counter=0; vp_counter<no_vps; vp_counter++)
+    {
+        std::vector<int8_t> temp_vect (no_tris);
+        for(int tri_counter=0; tri_counter<no_tris; tri_counter++)
+        {
+            // temp_vect[tri_counter] = this->vis_matrix.getEntry(tri_counter, vp_counter);
+            msg.data.push_back((int8_t)this->vis_matrix.getEntry(tri_counter, vp_counter));
+        }
+    }
+
+    srv.request.visibility_matrix = msg;
+
+    client.waitForExistence();
+    if(!client.call(srv))
+    {
+        throw std::runtime_error("SetCoverSolver service call failed");
+    }
+
+    auto response = srv.response.occlusion_result;
+
+    this->setViewpointsKept(response);
+}
+
+void ViewpointReduction::setViewpointsKept(std::vector<int> vp_indices)
+{
+    for(auto vp_index: vp_indices)
+    {
+        std::vector<tri_t*> tris_temp;
+        for(int tri=0; tri<this->vis_matrix.getNoTris(); tri++){
+            if(this->vis_matrix.getEntry(tri,vp_index) == true)
+            {
+                tris_temp.push_back(this->triangles.at(tri));
+            }
+        }
+
+        // VisibilityContainer vc_temp(vp_index, &this->view_points[vp_index], tris_temp);  //TO-DO:
+        this->viewpoints_kept.push_back(VisibilityContainer(vp_index, &this->view_points[vp_index], tris_temp));
+    }
+}
+
 
 VisibilityContainer::VisibilityContainer(int vp_num, StateVector *VP, std::vector<tri_t*> tri)
 {

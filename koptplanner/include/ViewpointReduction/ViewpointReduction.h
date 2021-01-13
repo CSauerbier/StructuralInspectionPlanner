@@ -20,6 +20,8 @@
 #include <math.h>
 #include <time.h>
 #include <stdexcept>
+#include <std_msgs/Int8MultiArray.h>
+#include "koptplanner/SetCoverSolver.h"
 
 
 #ifdef __TIMING_INFO__
@@ -125,15 +127,18 @@ private:
     std::vector<float> triangle_surface_areas;
     float surface_area;
     float area_stop_criterion;
+    bool use_set_cover_lagrangian_relax;
 
     void generateVisibilityMatrix();
-    void solveSetCoveringProbGreedy();
     void exportMatlabData(std::string fname, StateVector * VP, int noOfVPs);
     void setTriangleSurfaceAreas();
     int findNextBestVP();
     int findNextBestVP(std::vector<bool> &triangle_covered);
     float computeSurfaceArea(std::vector<tri_t*> tri_vct);
     void setUncoveredTriangles(std::vector<bool>);
+    void solveSetCoveringProbGreedy();
+    void solveSetCoveringProbLagrangianRelax();    //TO-DO: Naming...
+    void setViewpointsKept(std::vector<int> vp_indices);    //TO-DO: Naming
 public:
     /** 
      * Creates a ViewpointReduction-Object that processes mesh visibility for view points, taking into account occlusion, 

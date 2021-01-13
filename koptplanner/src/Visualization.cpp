@@ -26,9 +26,10 @@ void Visualization::push_back(tri_t* tri)
   this->trisToBeVisualized.push_back(tri);
 }
 
-void Visualization::increment()
+void Visualization::nextVisualization()
 {
   s_publishing_number++;
+  ColorRGB::cycle();
 }
 
 void FacetVisualization::visualizeTriangles()
@@ -95,8 +96,6 @@ void FacetVisualization::visualizeTriangles(std::vector<tri_t*> tri)
 
     r.sleep();
   }
-  ColorRGB::cycle();  //TO-DO: Improve quality
-  s_publishing_number++;
 }
 
 void CameraVisualization::visualizeCameras(StateVector *view_point)
@@ -134,7 +133,52 @@ void CameraVisualization::visualizeCameras(StateVector *view_point)
   point.color.g = ColorRGB::getCurrent().g;
   point.color.b = ColorRGB::getCurrent().b;
   point.color.a = 0.7;
-  point.lifetime = ros::Duration();
   viewpoint_pub.publish(point);
 }
 
+
+void PointVisualization::visualizePoints(std::vector<CartesianCoordinates*> &points)
+{
+  ros::NodeHandle n;
+  
+  ros::Publisher marker_pub = n.advertise<visualization_msgs::Marker>("point_visualization", 10);
+
+  ros::Rate r(30);
+  r.sleep();
+
+  for (int iter=0; iter<10; iter++) //TO-DO: Improve. Redundancy, because not every message is received by subscriber
+  {
+
+    visualization_msgs::Marker marker;
+    marker.header.frame_id = "kopt_frame";
+    marker.header.stamp = ros::Time::now();
+    marker.ns = "points_list";
+    // marker.action = visualization_msgs::Marker::ADD;  //TO-DO: See if this can be used to handle overwriting
+    marker.pose.orientation.w = 1.0;
+
+    marker.type = visualization_msgs::Marker::POINTS;
+    marker.scale.x = marker.scale.y = marker.scale.z = 1;
+    marker.color.r = ColorRGB::getCurrent().r;
+    marker.color.g = ColorRGB::getCurrent().g;
+    marker.color.b = ColorRGB::getCurrent().b;
+    marker.color.a = 1.0;
+
+    int i=0;
+    for (auto point: points)
+    {
+      geometry_msgs::Point p;
+      p.x = point->x;
+      p.y = point->y;
+      p.z = point->z;
+
+      marker.points.push_back(p);
+
+      marker.id = i + s_publishing_number+1000;  //TO-DO: Fix this for rest of code
+      i++;
+    }
+
+    marker_pub.publish(marker);
+
+    r.sleep();
+  }
+}

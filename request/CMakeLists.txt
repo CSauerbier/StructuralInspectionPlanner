@@ -110,18 +110,13 @@ include_directories(
 
 ## Declare a cpp executable
 add_executable(inspectionClient src/inspectionClient.cpp)
-add_executable(hoaHakanaia src/hoaHakanaia.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 add_dependencies(inspectionClient koptplanner_generated_messages_cpp)
-add_dependencies(hoaHakanaia koptplanner_generated_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(inspectionClient
-  ${catkin_LIBRARIES}
-)
-target_link_libraries(hoaHakanaia
   ${catkin_LIBRARIES}
 )
 

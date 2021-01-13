@@ -27,3 +27,4 @@ algorithm/stop_criterion: 0.2
 algorithm/sphere_sampling_points: 100
 algorithm/use_gpu: true
 algorithm/moeller_trumbore_occlusion_check: true
+algorithm/set_cover_lagrangian_relax: false

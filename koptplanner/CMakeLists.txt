@@ -33,6 +33,7 @@ set(CMAKE_BUILD_TYPE Release)
 add_service_files(
   FILES
   inspection.srv
+  SetCoverSolver.srv
 )
 
 ## Generate added messages and services with any dependencies listed here
@@ -212,4 +213,13 @@ target_link_libraries(plan
   ${optec_LIBRARIES}
   ${catkin_LIBRARIES}
   CudaLib
+)
+
+
+#############
+## Install ##
+#############
+install(PROGRAMS
+  scripts/SetCoverSolver_server.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

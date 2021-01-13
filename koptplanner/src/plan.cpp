@@ -597,7 +597,9 @@ bool plan(koptplanner::inspection::Request  &req,
       Singleton<CameraVisualization>().visualizeCameras(temp_vc.at(i).getVP());
       delayRate.sleep();
       Singleton<FacetVisualization>().visualizeTriangles(temp_vc.at(i).getTriVect());
-      delayRate.sleep();      
+      delayRate.sleep();
+      Singleton<FacetVisualization>().nextVisualization(); //TO-DO: Test if this works correctly
+      Singleton<CameraVisualization>().nextVisualization(); //TO-DO: Test if this works correctly
     }
 
     gettimeofday(&time, NULL);

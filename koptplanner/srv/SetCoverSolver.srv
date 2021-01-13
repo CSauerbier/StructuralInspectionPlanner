@@ -1,0 +1,5 @@
+std_msgs/Int8MultiArray visibility_matrix
+
+----------------------------------------------
+
+int32[] occlusion_result
