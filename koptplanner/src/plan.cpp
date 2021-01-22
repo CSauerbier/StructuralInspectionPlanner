@@ -591,15 +591,31 @@ bool plan(koptplanner::inspection::Request  &req,
 
     ros::Rate delayRate(20);
     std::vector<VisibilityContainer> temp_vc = vpRedCombined.getSelectedVPs();
+
+    //Make sure each facet is only displayed once. TO-DO: More elegantly and more robust
+    std::vector<tri_t*> covered_tris;
     ROS_INFO("No. of VPs overall: %li", temp_vc.size());
     for (int i=0; i<temp_vc.size(); i++)
     {
+      std::vector<tri_t*> uncovered_tris = temp_vc.at(i).getTriVect();
+      for(auto triangle: covered_tris)
+      {
+        auto it = std::find(uncovered_tris.begin(), uncovered_tris.end(), triangle);
+        if(it != uncovered_tris.end())
+        {
+          uncovered_tris.erase(it);
+        }
+      }
+      for(auto triangle: uncovered_tris)
+      {
+        covered_tris.push_back(triangle);
+      }
       Singleton<CameraVisualization>().visualizeCameras(temp_vc.at(i).getVP());
       delayRate.sleep();
-      Singleton<FacetVisualization>().visualizeTriangles(temp_vc.at(i).getTriVect());
+      Singleton<FacetVisualization>().visualizeTriangles(uncovered_tris);
       delayRate.sleep();
-      Singleton<FacetVisualization>().nextVisualization(); //TO-DO: Test if this works correctly
-      Singleton<CameraVisualization>().nextVisualization(); //TO-DO: Test if this works correctly
+      Singleton<FacetVisualization>().nextVisualization();
+      Singleton<CameraVisualization>().nextVisualization();
     }
 
     gettimeofday(&time, NULL);

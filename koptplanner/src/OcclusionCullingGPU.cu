@@ -11,7 +11,7 @@
 #define det(u_x, u_y, v_x, v_y) (u_x*v_y-u_y*v_x)
 
 __device__ const float EPSILON = 0.000001;
-__device__ const float TOLERANCE = 0.01;
+__device__ const float TOLERANCE = 0.001;    //TO-DO
 
 
 bool g_use_gpu;
@@ -391,17 +391,6 @@ __global__ void occlusionCheck_gpu(float3 *ray_origin, float3 *vertex0, float3 *
 {
     int i = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Check whether point is closer to view point than triangle. If so, the triangle cannot occlude the point
-    float dist0 = norm(vertex0[i]-*ray_origin);
-    float dist1 = norm(vertex1[i]-*ray_origin);
-    float dist2 = norm(vertex2[i]-*ray_origin);
-    float distp = norm(*test_point-*ray_origin);
-    if(dist0>distp && dist1>distp && dist2>distp)
-    {
-        // Point closer than triangle, cannot be occluded
-        return;
-    }
-
     float3 ray_vector = *test_point - *ray_origin;
     ray_vector = (1.0/(norm(ray_vector)))*ray_vector; //Normalize
 
@@ -427,7 +416,10 @@ __global__ void occlusionCheck_gpu(float3 *ray_origin, float3 *vertex0, float3 *
     inv_det = 1.0/determinant;
     tvec = *ray_origin - vertex0[i];
     u = inv_det * dot(tvec,pvec);
-    if (u <= 0.0+TOLERANCE || u >= 1.0-TOLERANCE)
+
+    //If any single barycentric is sufficiently close to 1, the respective point itself is tested. If so, skip the triangle in question.
+    //If a barycentric is exactly 0, the ray may be tangent to the line connecting the other two barycentric points. If so, continue with checks.
+    if (u < 0.0 || u >= 1.0-TOLERANCE)
     {
         return;
     }
@@ -435,7 +427,7 @@ __global__ void occlusionCheck_gpu(float3 *ray_origin, float3 *vertex0, float3 *
     qvec  = cross(tvec, edge1);
     v = inv_det*dot(ray_vector,qvec);
     
-    if (v <= 0.0+TOLERANCE || u + v >= 1.0-TOLERANCE)
+    if (v < 0.0 || v >= 1.0-TOLERANCE)
     {
         return;
     }
@@ -443,15 +435,19 @@ __global__ void occlusionCheck_gpu(float3 *ray_origin, float3 *vertex0, float3 *
     //Neccessary because boundary intersection is supposed to pass the test (same vertex for multiple triangles) unlike in original algorithm
     //TO-DO: Check with prior statements
     float w = 1 - u - v;
-    if(w <= 0.0+TOLERANCE || w >= 1.0-TOLERANCE)
+    if(w <= 0.0 || w >= 1.0-TOLERANCE)
     {
         return;
     }
     double t = inv_det * dot(edge2,qvec);
     if (t > EPSILON) // ray intersects triangle
     {
-        //TO-DO: Handle case when point is within the distance band of the triangle through intersection_point
-        *output = false;
+        //Check whether the point is in front of the triangle
+        float distp = norm(*test_point-*ray_origin);
+        if(t <= distp)
+        {
+            *output = false;
+        }
     }
 }
 
@@ -460,11 +456,11 @@ __global__ void occlusionCheck_gpu(float3 *ray_origin, float3 *vertex0, float3 *
  * \param vp_number Index of the vector of view points passed during previous initialization that is to be checked
  * \returns Boolean vector that states whether the entries vertices vector previously passed are visible
  */
-std::vector<bool> occlusionCheck_cpu(int vp_number)
+std::vector<int> occlusionCheck_cpu(int vp_number)
 {
     float3 ray_origin = h_viewpoints[vp_number];
 
-    std::vector<bool> occlusion_res(g_vertices_size, true);
+    std::vector<int> occlusion_res(g_vertices_size, true);
     
     //Looping over all vertices 
     for(int vertex_counter=0; vertex_counter<g_vertices_size; vertex_counter++)
@@ -477,16 +473,6 @@ std::vector<bool> occlusionCheck_cpu(int vp_number)
             float3 vertex0 = h_vertex0[tri_counter];
             float3 vertex1 = h_vertex1[tri_counter];
             float3 vertex2 = h_vertex2[tri_counter];
-
-            // Check whether point is closer to view point than triangle. If so, the triangle cannot occlude the point
-            float dist0 = norm(vertex0-ray_origin);
-            float dist1 = norm(vertex1-ray_origin);
-            float dist2 = norm(vertex2-ray_origin);
-            float distp = norm(test_point-ray_origin);
-            if(dist0>distp && dist1>distp && dist2>distp)
-            {
-                continue;
-            }
 
             float3 ray_vector = test_point - ray_origin;
             ray_vector = (1.0/(norm(ray_vector)))*ray_vector; //Normalize
@@ -508,7 +494,10 @@ std::vector<bool> occlusionCheck_cpu(int vp_number)
             inv_det = 1.0/determinant;
             tvec = ray_origin - vertex0;
             u = inv_det * dot(tvec,pvec);
-            if (u <= 0.0+TOLERANCE || u >= 1.0-TOLERANCE)
+
+            //If any single barycentric is sufficiently close to 1, the respective point itself is tested. If so, skip the triangle in question.
+            //If a barycentric is exactly 0, the ray may be tangent to the line connecting the other two barycentric points. If so, continue with checks.
+            if (u < 0.0 || u >= 1.0-TOLERANCE)
             {
                 continue;
             }
@@ -516,14 +505,14 @@ std::vector<bool> occlusionCheck_cpu(int vp_number)
             qvec  = cross(tvec, edge1);
             v = inv_det*dot(ray_vector,qvec);
             
-            if (v <= 0.0+TOLERANCE || u + v >= 1.0-TOLERANCE)
+            if (v < 0.0 || v >= 1.0-TOLERANCE)
             {
                 continue;
             }
 
             //TO-DO: Check with prior statements
             float w = 1 - u - v;
-            if(w <= 0.0+TOLERANCE || w >= 1.0-TOLERANCE)
+            if(w <= 0.0 || w >= 1.0-TOLERANCE)
             {
                 continue;
             }
@@ -531,9 +520,13 @@ std::vector<bool> occlusionCheck_cpu(int vp_number)
             double t = inv_det * dot(edge2,qvec);
             if (t > EPSILON) // ray intersection
             {
-                //TO-DO: Handle case when point is within the distance band of the triangle through intersection_point
-                is_visible = false;
-                break;
+                //Check whether the point is in front of the triangle
+                float distp = norm(test_point-ray_origin);
+                if(t <= distp)
+                {
+                    is_visible = false;
+                    break;
+                }
             }
         }
         occlusion_res[vertex_counter] = is_visible;
@@ -547,7 +540,7 @@ std::vector<bool> occlusionCheck_cpu(int vp_number)
  * \param vp_number Index of the vector of view points passed during previous initialization that is to be checked
  * \returns Boolean vector that states whether the entries vertices vector previously passed are visible
  */
-std::vector<bool> occlusionCheck_interface(int vp_number)
+std::vector<int> occlusionCheck_interface(int vp_number)
 {
     if(!g_is_initialized)
     {
@@ -579,7 +572,7 @@ std::vector<bool> occlusionCheck_interface(int vp_number)
         //Reset occlusion results in GPU memory to all true
         resetDeviceOutput();
 
-        std::vector<bool> output_vect(h_outputs, h_outputs+g_vertices_size);
+        std::vector<int> output_vect(h_outputs, h_outputs+g_vertices_size);
         return output_vect;
     }
     else

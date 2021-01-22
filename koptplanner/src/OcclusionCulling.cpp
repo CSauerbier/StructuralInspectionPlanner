@@ -330,7 +330,7 @@ void OcclusionCulling::initializeMoellerTrumbore(std::vector<TriangleVertices*> 
     setGeometryData_interface(tri_v, vertices, view_points, use_gpu);
 }
 
-std::vector<bool> OcclusionCulling::occlusionCheck_GPU_MoellerTrumbore(int vp_number)
+std::vector<int> OcclusionCulling::occlusionCheck_GPU_MoellerTrumbore(int vp_number)
 {
     return occlusionCheck_interface(vp_number);
 }

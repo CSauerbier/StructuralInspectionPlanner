@@ -133,9 +133,9 @@ private:
     void exportMatlabData(std::string fname, StateVector * VP, int noOfVPs);
     void setTriangleSurfaceAreas();
     int findNextBestVP();
-    int findNextBestVP(std::vector<bool> &triangle_covered);
+    int findNextBestVP(std::vector<int> &triangle_covered);
     float computeSurfaceArea(std::vector<tri_t*> tri_vct);
-    void setUncoveredTriangles(std::vector<bool>);
+    void setUncoveredTriangles(std::vector<int>);
     void solveSetCoveringProbGreedy();
     void solveSetCoveringProbLagrangianRelax();    //TO-DO: Naming...
     void setViewpointsKept(std::vector<int> vp_indices);    //TO-DO: Naming

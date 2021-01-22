@@ -22,7 +22,7 @@ void setGeometryData_interface(std::vector<TriangleVertices*> &tri_v,
                                 std::vector<CartesianCoordinates*> view_points, 
                                 bool use_gpu);
 void deleteGeometryData_interface();
-std::vector<bool> occlusionCheck_interface(int vp_number);
+std::vector<int> occlusionCheck_interface(int vp_number);
 
 int *within_triangle_query_gpu_driver(int num,
     float p_x,
@@ -123,7 +123,7 @@ namespace OcclusionCulling
      * \param vp_number Index of the vector of view points passed during previous initialization that is to be checked
      * \returns Boolean vector that states whether the entries vertices vector previously passed are visible
      */
-    std::vector<bool> occlusionCheck_GPU_MoellerTrumbore(int vp_number);
+    std::vector<int> occlusionCheck_GPU_MoellerTrumbore(int vp_number);
 
     /**
      * Clears geometry data structures that were created in initialization routine

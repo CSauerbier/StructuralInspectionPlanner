@@ -12,6 +12,7 @@ Panels:
         - /Marker2
         - /Mesh_Marker1
         - /Marker3
+        - /Marker4
       Splitter Ratio: 0.5
     Tree Height: 755
   - Class: rviz/Selection
@@ -132,7 +133,7 @@ Visualization Manager:
       Marker Topic: /triangle_visualization
       Name: MarkerArray
       Namespaces:
-        {}
+        triangle_list: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -150,6 +151,14 @@ Visualization Manager:
       Namespaces:
         points_list: true
       Queue Size: 1
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: line_marker
+      Name: Marker
+      Namespaces:
+        {}
+      Queue Size: 100
       Value: true
   Enabled: true
   Global Options:
@@ -179,25 +188,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 1168.3798828125
+      Distance: 546.0724487304688
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 22.468429565429688
-        Y: -0.5137935876846313
-        Z: 65.51451110839844
+        X: 15.94976806640625
+        Y: -12.771716117858887
+        Z: 67.55888366699219
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.7852041125297546
+      Pitch: 0.8397966623306274
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 1.843997836112976
+      Yaw: 1.3539983034133911
     Saved: ~
 Window Geometry:
   Displays:

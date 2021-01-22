@@ -142,7 +142,7 @@ void ViewpointReduction::generateVisibilityMatrix()
             #endif
 
             //Call CUDA function to solve the occlusion query
-            std::vector<bool> points_occlusion_result = OcclusionCulling::occlusionCheck_GPU_MoellerTrumbore(vp);
+            std::vector<int> points_occlusion_result = OcclusionCulling::occlusionCheck_GPU_MoellerTrumbore(vp);
 
             #ifdef __TIMING_INFO__
             gettimeofday(&time_occlusion, NULL);
@@ -169,7 +169,7 @@ void ViewpointReduction::generateVisibilityMatrix()
             }
 
             //Boolean vector whose entries state whether the triangle at the same index is visible or not
-            std::vector<bool> triangle_occlusion_result(this->triangles.size(), false);
+            std::vector<int> triangle_occlusion_result(this->triangles.size(), false);
             for(int i=0; i<this->triangles.size(); i++)
             {
                 if(visible_triangles.find(this->triangles[i]) != visible_triangles.end())
@@ -291,7 +291,7 @@ std::vector<tri_t *> ViewpointReduction::getUncoveredTriangles()
 void ViewpointReduction::solveSetCoveringProbGreedy()
 {
     //to keep track whether or not the facet seen by any VP
-    std::vector<bool> triangle_covered(this->vis_matrix.getNoTris(), false);
+    std::vector<int> triangle_covered(this->vis_matrix.getNoTris(), false);
     
     bool all_tris_covered;
     int no_uncovered_tris = 0;
@@ -442,11 +442,11 @@ void ViewpointReduction::setTriangleSurfaceAreas()
 
 int ViewpointReduction::findNextBestVP()
 {  
-    std::vector<bool> empty_vec (this->triangles.size(), false);
+    std::vector<int> empty_vec (this->triangles.size(), false);
     return this->findNextBestVP(empty_vec);
 }
 
-int ViewpointReduction::findNextBestVP(std::vector<bool> &skip_mask)
+int ViewpointReduction::findNextBestVP(std::vector<int> &skip_mask)
 {  
     if(skip_mask.size() != this->triangles.size())
     {
@@ -477,7 +477,7 @@ float ViewpointReduction::computeSurfaceArea(std::vector<tri_t*> tri_vct)
     return sum;
 }
 
-void ViewpointReduction::setUncoveredTriangles(std::vector<bool> triangle_covered)
+void ViewpointReduction::setUncoveredTriangles(std::vector<int> triangle_covered)
 {
     if(triangle_covered.size() != this->triangles.size())
     {

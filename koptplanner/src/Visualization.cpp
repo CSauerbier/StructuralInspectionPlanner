@@ -55,7 +55,6 @@ void FacetVisualization::visualizeTriangles(std::vector<tri_t*> tri)
         marker.ns = "triangle_list";
         marker.action = visualization_msgs::Marker::ADD;
         marker.pose.orientation.w = 1.0;
-        marker.lifetime = ros::Duration(9); //TO-DO: Remove
 
         marker.type = visualization_msgs::Marker::TRIANGLE_LIST;
         marker.scale.x = marker.scale.y = marker.scale.z = 1;
@@ -153,7 +152,7 @@ void PointVisualization::visualizePoints(std::vector<CartesianCoordinates*> &poi
         marker.header.frame_id = "kopt_frame";
         marker.header.stamp = ros::Time::now();
         marker.ns = "points_list";
-        // marker.action = visualization_msgs::Marker::ADD;    //TO-DO: See if this can be used to handle overwriting
+        marker.action = visualization_msgs::Marker::ADD;
         marker.pose.orientation.w = 1.0;
 
         marker.type = visualization_msgs::Marker::POINTS;
@@ -208,7 +207,6 @@ void LineVisualization::visualizeLine(CartesianCoordinates start, CartesianCoord
     marker.color.g = ColorRGB::getCurrent().g;
     marker.color.b = ColorRGB::getCurrent().b;
     marker.color.a = 0.7;
-    marker.lifetime = ros::Duration(9); //TO-DO:
 
     geometry_msgs::Point p;
     p.x = start.x;
