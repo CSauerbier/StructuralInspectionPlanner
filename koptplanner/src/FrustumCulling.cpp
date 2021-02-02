@@ -63,7 +63,7 @@ std::set<TriTransformed*> convertToVPCoSys(std::unordered_set<tri_t*> inputTrian
     tf_inv.setRotation(rotation);
     tf2::Transform tf = tf_inv.inverse();
 
-    //Iterate over all input triangles and create data structure of facets in spherical coordinates 
+    //TO-DO: Documentation on how the transformed coordinates are arranged. Should be x-axis = optical axis
     std::set<std::array<tf2::Vector3, 3>> tri_sp_container;
     for(auto it: inputTriangles)
     {
