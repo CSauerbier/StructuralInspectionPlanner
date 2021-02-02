@@ -91,8 +91,12 @@ def old_fix_mesh(vertices, faces, detail="normal"):
 
 def handle_mesh_resolution_modification(req):
     
-
-    (path_in, filename_in) = os.path.split(req.file_path_in)
+    #if no file path is specified, use the sample model, otherwise prepare to load the specified mesh
+    if(req.file_path_in):
+        (path_in, filename_in) = os.path.split(req.file_path_in)
+    else:
+        rospy.logwarn("No mesh model path specified, using sample model")
+        (path_in, filename_in) = os.path.split(str(rospkg.RosPack().get_path('request')) + "/meshes/BigBen.stl")
     resolution = req.target_resolution
     filename_out = filename_in.replace('.stl', '') + "_" + '%.1E' % Decimal(resolution) + "_ASCII.stl"
 
