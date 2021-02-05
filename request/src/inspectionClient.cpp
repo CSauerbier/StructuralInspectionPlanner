@@ -32,20 +32,20 @@ int main(int argc, char **argv)
 
   ros::NodeHandle n;
   ros::Publisher obstacle_pub = n.advertise<visualization_msgs::Marker>("scenario", 1);
-  ros::Publisher stl_pub = n.advertise<nav_msgs::Path>("stl_mesh", 1);
   ros::ServiceClient client = n.serviceClient<koptplanner::inspection>("inspectionPath");
+  
+  ros::Publisher path_pub = n.advertise<nav_msgs::Path>("path_publisher", 1);
 
   std::string coarse_file_path, fine_file_path;
   request::MeshResolutionModification mesh_srv;
   std::string file_path_in;
   float target_resolution_coarse, target_resolution_fine;
-  bool enable_mesh_modification;
 
   ros::Rate r(50.0);
   ros::Rate r2(1.0);
   r2.sleep();
 
-   double max_x, max_y, max_z, min_x, min_y, min_z; //TO-DI: Move down, consider array
+  double max_x, max_y, max_z, min_x, min_y, min_z; //TO-DO: Move down, consider array
 
   /* define the bounding box */
   koptplanner::inspection srv;
@@ -90,7 +90,6 @@ int main(int argc, char **argv)
   //TO-DO: Remove iterations
 
 
-  ros::Rate rtest(30);
   ros::ServiceClient service_call = n.serviceClient<request::MeshResolutionModification>("/mesh_resolution_modification");
 
   ros::param::get("~/mesh/path", file_path_in);
@@ -100,15 +99,19 @@ int main(int argc, char **argv)
   mesh_srv.request.file_path_in = file_path_in;
   mesh_srv.request.target_resolution = target_resolution_coarse;
   service_call.waitForExistence();
-  if(!service_call.call(mesh_srv)) return 1;
+  if(!service_call.call(mesh_srv))
+  {
+    ROS_ERROR("Mesh-Service call failed");
+    return 1;
+  }
   coarse_file_path = mesh_srv.response.file_path_out;
 
   mesh_srv.request.target_resolution = target_resolution_fine;
   service_call.waitForExistence();
   if(!service_call.call(mesh_srv)) 
   {
-      ROS_ERROR("Mesh-Service call failed");
-      return 1;
+    ROS_ERROR("Mesh-Service call failed");
+    return 1;
   }
   fine_file_path = mesh_srv.response.file_path_out;
 
@@ -121,7 +124,6 @@ int main(int argc, char **argv)
   ROS_INFO("mesh size = %i", (int)mesh->size());
   for(std::vector<nav_msgs::Path>::iterator it = mesh->begin(); it != mesh->end() && ros::ok(); it++)
   {
-    // stl_pub.publish(*it);
     geometry_msgs::Polygon p;
     geometry_msgs::Point32 p32;
     p32.x = it->poses[0].pose.position.x;
@@ -137,7 +139,6 @@ int main(int argc, char **argv)
     p32.z = it->poses[2].pose.position.z;
     p.points.push_back(p32);
     srv.request.inspectionArea.push_back(p);
-    // r.sleep();
   }
 
   /* read in simplified coarse mesh for preprocessing*/
@@ -169,6 +170,9 @@ int main(int argc, char **argv)
 
   if (client.call(srv))
   {
+    /* Publish the inspection path for the robot */
+    path_pub.publish(srv.response.inspectionPath);
+
     /* writing results of scenario to m-file. use supplied script to visualize */
     std::fstream pathPublication;
     std::string pkgPath = ros::package::getPath("request");

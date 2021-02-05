@@ -659,18 +659,20 @@ int cplusplus_callback_publish(int* Tour, int Dim, GainType Cost)
       if(false)
 #endif
       {
-        path = plannerArray[T[0]-1]->rrts_.getPathForPublication(plannerArray[i]->stateVec);
+        // path = plannerArray[T[0]-1]->rrts_.getPathForPublication(plannerArray[i]->stateVec);
+        plannerArray[T[i]-1]->rrts_.getPathForPublication(plannerArray[T[i+1]-1]->stateVec);
         std::vector<float> tmp;
-        for(int l = 0; l<DIMENSIONALITY; l++)
+        for(int l = 0; l<5; l++)
           tmp.push_back(plannerArray[i]->stateVec[l]);
         path.push_back(tmp);
         std::reverse(path.begin(), path.end());
       }
       else
       {
-        path = plannerArray[T[i]-1]->rrts_.getPathForPublication(plannerArray[T[0]-1]->stateVec);
+        // path = plannerArray[T[i]-1]->rrts_.getPathForPublication(plannerArray[T[0]-1]->stateVec);
+        plannerArray[T[i]-1]->rrts_.getPathForPublication(plannerArray[T[i+1]-1]->stateVec);
         std::vector<float> tmp;
-        for(int l = 0; l<DIMENSIONALITY; l++)
+        for(int l = 0; l<5; l++)
           tmp.push_back(plannerArray[T[0]-1]->stateVec[l]);
         path.push_back(tmp);
       }
@@ -683,18 +685,20 @@ int cplusplus_callback_publish(int* Tour, int Dim, GainType Cost)
       if(false)
 #endif
       {
-        path = plannerArray[T[i+1]-1]->rrts_.getPathForPublication(plannerArray[0]->stateVec);
+        // path = plannerArray[T[i+1]-1]->rrts_.getPathForPublication(plannerArray[0]->stateVec);
+        plannerArray[T[i]-1]->rrts_.getPathForPublication(plannerArray[T[i+1]-1]->stateVec);
         std::vector<float> tmp;
-        for(int l = 0; l<DIMENSIONALITY; l++)
+        for(int l = 0; l<5; l++)
           tmp.push_back(plannerArray[0]->stateVec[l]);
         path.push_back(tmp);
         std::reverse(path.begin(), path.end());
       }
       else
       {
-        path = plannerArray[T[i]-1]->rrts_.getPathForPublication(plannerArray[T[i+1]-1]->stateVec);
+        // path = plannerArray[T[i]-1]->rrts_.getPathForPublication(plannerArray[T[i+1]-1]->stateVec);
+        plannerArray[T[i]-1]->rrts_.getPathForPublication(plannerArray[T[i+1]-1]->stateVec);
         std::vector<float> tmp;
-        for(int l = 0; l<DIMENSIONALITY; l++)
+        for(int l = 0; l<5; l++)
           tmp.push_back(plannerArray[T[i+1]-1]->stateVec[l]);
         path.push_back(tmp);
       }
@@ -709,7 +713,7 @@ int cplusplus_callback_publish(int* Tour, int Dim, GainType Cost)
 #if DIMENSIONALITY>4
       tf::Quaternion q = tf::createQuaternionFromRPY((*it)[3],(*it)[4],(*it)[5]);
 #else
-      tf::Quaternion q = tf::createQuaternionFromRPY(0,0,(*it)[3]);
+      tf::Quaternion q = tf::createQuaternionFromRPY(0,(*it)[4],(*it)[3]);
 #endif
       tempPose.pose.orientation.x = q.x();
       tempPose.pose.orientation.y = q.y();
@@ -742,8 +746,10 @@ int cplusplus_callback_publish(int* Tour, int Dim, GainType Cost)
   {
     tf::Pose pose;
     tf::poseMsgToTF(it->pose, pose);
-    double yaw_angle = tf::getYaw(pose.getRotation());
-    f << it->pose.position.x << "," << it->pose.position.y << "," << it->pose.position.z << ",0,0," << yaw_angle << "\n";
+    double roll_angle, pitch_angle, yaw_angle;
+    pose.getBasis().getRPY(roll_angle, pitch_angle, yaw_angle);
+    
+    f << it->pose.position.x << "," << it->pose.position.y << "," << it->pose.position.z << ",0," << pitch_angle << "," << yaw_angle << "\n";
   }
   f.close();
   return 1;
