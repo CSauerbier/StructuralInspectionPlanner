@@ -585,6 +585,12 @@ VisibilityContainer::VisibilityContainer(int vp_num, StateVector *VP, std::vecto
     this->vp_number = vp_num;
     this->view_point = *VP;
     this->triangle_vector = tri;
+
+    this->area_covered = 0;
+    for(auto tri: this->triangle_vector)
+    {
+        this->area_covered += tri->a.norm();
+    }
 }
 
 int VisibilityContainer::getVPNum()
@@ -600,4 +606,9 @@ StateVector* VisibilityContainer::getVP()
 std::vector<tri_t*> VisibilityContainer::getTriVect()
 {
     return this->triangle_vector;
+}
+
+float VisibilityContainer::getAreaCovered()
+{
+    return this->area_covered;
 }

@@ -85,6 +85,7 @@ private:
     int vp_number;
     StateVector view_point;
     std::vector<tri_t*> triangle_vector;
+    float area_covered;
 public:
     /**
      * Constructor to set all VisibilityContainer member variables.
@@ -106,6 +107,12 @@ public:
      * previously selected view point
      * */
     std::vector<tri_t*> getTriVect();
+
+    /**
+     * Returns the surface area visible from the given view point (disregarding overlap)
+     * \returns Area covered by the view point in mm²
+     */
+    float getAreaCovered();
 };
 
 
