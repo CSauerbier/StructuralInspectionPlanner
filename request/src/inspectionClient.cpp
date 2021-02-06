@@ -38,7 +38,7 @@ int main(int argc, char **argv)
 
   std::string coarse_file_path, fine_file_path;
   request::MeshResolutionModification mesh_srv;
-  std::string file_path_in;
+  std::string file_path_in, gripper_file_path;
   float target_resolution_coarse, target_resolution_fine;
 
   ros::Rate r(50.0);
@@ -148,7 +148,6 @@ int main(int argc, char **argv)
     ROS_INFO("mesh size = %i", (int)mesh2->size());
     for(std::vector<nav_msgs::Path>::iterator it = mesh2->begin(); it != mesh2->end() && ros::ok(); it++)
     {
-      // stl_pub.publish(*it);
       geometry_msgs::Polygon p;
       geometry_msgs::Point32 p32;
       p32.x = it->poses[0].pose.position.x;
@@ -164,7 +163,32 @@ int main(int argc, char **argv)
       p32.z = it->poses[2].pose.position.z;
       p.points.push_back(p32);
       srv.request.inspectionAreaCoarse.push_back(p);
-      // r.sleep();
+    }
+  }
+
+  /* read in gripper geometry if given*/
+  ros::param::get("~/mesh/gripper_path", gripper_file_path);
+  if(gripper_file_path != "")
+  {
+    std::vector<nav_msgs::Path> *mesh_gripper = readSTLfile(gripper_file_path);
+
+    for(std::vector<nav_msgs::Path>::iterator it = mesh_gripper->begin(); it != mesh_gripper->end() && ros::ok(); it++)
+    {
+      geometry_msgs::Polygon p;
+      geometry_msgs::Point32 p32;
+      p32.x = it->poses[0].pose.position.x;
+      p32.y = it->poses[0].pose.position.y;
+      p32.z = it->poses[0].pose.position.z;
+      p.points.push_back(p32);
+      p32.x = it->poses[1].pose.position.x;
+      p32.y = it->poses[1].pose.position.y;
+      p32.z = it->poses[1].pose.position.z;
+      p.points.push_back(p32);
+      p32.x = it->poses[2].pose.position.x;
+      p32.y = it->poses[2].pose.position.y;
+      p32.z = it->poses[2].pose.position.z;
+      p.points.push_back(p32);
+      srv.request.gripper.push_back(p);
     }
   }
 

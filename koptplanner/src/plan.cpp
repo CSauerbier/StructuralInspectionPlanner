@@ -266,6 +266,8 @@ bool plan(koptplanner::inspection::Request  &req,
   std::vector<tri_t*> tri;
   std::vector<tri_t*> tri_coarse; //Data structure for simplified mesh
   tri_t::setParam(req.incidenceAngle, req.minDist, req.maxDist); // incidence angle from surface plane
+
+  std::vector<tri_t*> gripper;
   
   /* startpoint and further strictly required positions */
   for(std::vector<geometry_msgs::Pose>::iterator itFixedPoses = req.requiredPoses.begin(); itFixedPoses != req.requiredPoses.end() && (itFixedPoses != req.requiredPoses.end()-1 || req.requiredPoses.size()==1); itFixedPoses++)
@@ -407,6 +409,30 @@ bool plan(koptplanner::inspection::Request  &req,
   {
     tri_coarse = tri;
   }
+  /* gripper mesh*/
+  for(std::vector<geometry_msgs::Polygon>::iterator it = req.gripper.begin(); it != req.gripper.end(); it++)
+  {
+    tri_t* tmp = new tri_t;
+    tmp->x1[0] = (*it).points[0].x;
+    tmp->x1[1] = (*it).points[0].y;
+    tmp->x1[2] = (*it).points[0].z;
+
+    tmp->x2[0] = (*it).points[1].x;
+    tmp->x2[1] = (*it).points[1].y;
+    tmp->x2[2] = (*it).points[1].z;
+
+    tmp->x3[0] = (*it).points[2].x;
+    tmp->x3[1] = (*it).points[2].y;
+    tmp->x3[2] = (*it).points[2].z;
+
+    Vector3f a = ((tmp->x2-tmp->x1).cross(tmp->x3-tmp->x2))/2;
+
+    if(a.norm() != 0.0)
+    {
+      tmp->init();
+      gripper.push_back(tmp);
+    }
+  }
   
   /* end point */
   if(req.requiredPoses.size()>1 && // selecting the same start and end point causes the LKH to fail
@@ -524,7 +550,7 @@ bool plan(koptplanner::inspection::Request  &req,
       VP[i] = *sampler.getVP();
     }
 
-    ViewpointReduction vp_sphere(tri_coarse, tri_coarse, VP, sampler.numberOfPointsGenerated());
+    ViewpointReduction vp_sphere(tri_coarse, tri_coarse+gripper, VP, sampler.numberOfPointsGenerated());
     vp_sphere.removeRedundantVPs();
 
     vp_index += vp_sphere.getNoOfSelectedVPs();
@@ -546,7 +572,7 @@ bool plan(koptplanner::inspection::Request  &req,
     }
 
     //Remove redundant VPs for coarse mesh
-    ViewpointReduction vpRedCoarse (tri_coarse, tri_coarse, VP, vp_index);
+    ViewpointReduction vpRedCoarse (tri_coarse, tri_coarse+gripper, VP, vp_index);
     vpRedCoarse.removeRedundantVPs();
 
     vp_index = vpRedCoarse.getNoOfSelectedVPs();
@@ -554,7 +580,7 @@ bool plan(koptplanner::inspection::Request  &req,
     std::vector<tri_t*> tri_reduced = HiddenSurfaceRemoval::removeHiddenSurfaces(tri_coarse, vpRedCoarse.getUncoveredTriangles(), tri);
 
     //Check how the sampled VPs perform on the full mesh
-    ViewpointReduction vpRedFine(tri_reduced, tri_reduced, VP, vp_index);
+    ViewpointReduction vpRedFine(tri_reduced, tri_reduced+gripper, VP, vp_index);
 
     /*  Perform VP-Sampling for those facets that are not visible from the VPs sampled on the coarse mesh*/
     std::vector<tri_t*> tri_uncovered = vpRedFine.getUncoveredTriangles();
@@ -578,7 +604,7 @@ bool plan(koptplanner::inspection::Request  &req,
 
     /*  From combined set of VPs, choose most efficient configuration  */
 
-    ViewpointReduction vpRedCombined (tri_reduced, tri_reduced, VP, vp_index);
+    ViewpointReduction vpRedCombined (tri_reduced, tri_reduced+gripper, VP, vp_index);
     vpRedCombined.removeRedundantVPs();
 
     vp_index = vpRedCombined.getNoOfSelectedVPs();
@@ -591,6 +617,10 @@ bool plan(koptplanner::inspection::Request  &req,
 
     ros::Rate delayRate(20);
     std::vector<VisibilityContainer> temp_vc = vpRedCombined.getSelectedVPs();
+
+    Singleton<FacetVisualization>().visualizeTriangles(gripper);
+    delayRate.sleep();
+    Singleton<FacetVisualization>().nextVisualization();
 
     //Make sure each facet is only displayed once. TO-DO: More elegantly and more robust
     std::vector<tri_t*> covered_tris;
@@ -741,11 +771,17 @@ bool plan(koptplanner::inspection::Request  &req,
   tri.clear();
   if (!req.inspectionAreaCoarse.empty())
   {
-      for(typename std::vector<tri_t*>::iterator it = tri_coarse.begin(); it != tri_coarse.end(); it++)
-      {
-          delete (*it);
-      }
+    for(typename std::vector<tri_t*>::iterator it = tri_coarse.begin(); it != tri_coarse.end(); it++)
+    {
+        delete (*it);
+    }
+    tri_coarse.clear();
   }
+  for(typename std::vector<tri_t*>::iterator it = gripper.begin(); it != gripper.end(); it++)
+  {
+      delete (*it);
+  }
+  gripper.clear();
   for(typename std::list<reg_t*>::iterator it = sys_t::obstacles.begin(); it != sys_t::obstacles.end(); it++)
     delete (*it);
   sys_t::obstacles.clear();

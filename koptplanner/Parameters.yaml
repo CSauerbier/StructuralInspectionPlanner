@@ -16,6 +16,7 @@ rotorcraft/maxAngularSpeed: 0.5
 # mesh/path: "/path/to/stl/file"
 mesh/target_resolution_coarse: 0.02
 mesh/target_resolution_fine: 0.01
+#mesh/gripper_path: "/path/to/gripper/stl" #Optional, file needs to be in ASCII format
 
 #display
 display/progress: true

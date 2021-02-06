@@ -89,7 +89,6 @@ void ViewpointReduction::generateVisibilityMatrix()
             vertices[0] = new CartesianCoordinates(tri->x1[0], tri->x1[1], tri->x1[2]);
             vertices[1] = new CartesianCoordinates(tri->x2[0], tri->x2[1], tri->x2[2]);
             vertices[2] = new CartesianCoordinates(tri->x3[0], tri->x3[1], tri->x3[2]);
-            tri_vert_vect.push_back(new TriangleVertices(*vertices[0], *vertices[1], *vertices[2]));
 
             for(auto vertex: vertices)
             {
@@ -100,6 +99,22 @@ void ViewpointReduction::generateVisibilityMatrix()
 
                 //Add triangle to the list of triangles attached to this point
                 vertex_triangle_links[key].insert(tri);
+            }
+        }
+
+        //Add mesh triangles additional potential occluders to the mesh data structure
+        for(auto tri: this->triangles_considered)
+        {
+            std::array<CartesianCoordinates*, 3> vertices;
+            //Create dynamic instances to allow for object copy
+            vertices[0] = new CartesianCoordinates(tri->x1[0], tri->x1[1], tri->x1[2]);
+            vertices[1] = new CartesianCoordinates(tri->x2[0], tri->x2[1], tri->x2[2]);
+            vertices[2] = new CartesianCoordinates(tri->x3[0], tri->x3[1], tri->x3[2]);
+            tri_vert_vect.push_back(new TriangleVertices(*vertices[0], *vertices[1], *vertices[2]));
+
+            for(auto vertex: vertices)
+            {
+                coord_vect.push_back(vertex);
             }
         }
 

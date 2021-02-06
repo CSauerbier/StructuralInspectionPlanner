@@ -7,6 +7,7 @@
 #define _PLAN_HPP_
 
 #include <eigen3/Eigen/Dense>
+#include <vector>
 // To chose the used model (rotorcraft or fixed-wing) make
 // the corresponding definition. Define only one model.
 #define USE_ROTORCRAFT_MODEL
@@ -48,6 +49,17 @@
  #define DIMENSIONALITY 6
  #define __ATSP__
 #endif
+
+//Vector-concatenate via + operator
+template<typename T>
+std::vector<T> operator+(const std::vector<T> &a, const std::vector<T> &b)
+{
+  std::vector<T> ab;
+  ab.reserve(a.size() + b.size());
+  ab.insert(ab.end(), a.begin(), a.end());
+  ab.insert(ab.end(), b.begin(), b.end());
+  return ab;
+}
 
 enum koptError_t {
   SUCCESSFUL = 0,               // no error occured, successful execution

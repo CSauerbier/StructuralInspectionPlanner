@@ -108,7 +108,7 @@ namespace OcclusionCulling
     
     /**
      * Calls interface to CUDA code to transfer geometry data
-     * \param tri_v Vector of potential occludees to be checked
+     * \param tri_v Vector of potential occluders to be checked
      * \param vertices Vector of points to be checked for occlusion
      * \param view_points Vector of coordinates of view point to be checked
      * \param use_gpu Specify whether or not to perform the operations on the GPU
