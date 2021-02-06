@@ -294,7 +294,7 @@ int ViewpointReduction::getNoOfSelectedVPs()
     return this->viewpoints_kept.size();
 }
 
-std::vector<VisibilityContainer> ViewpointReduction::getSelectedVPs()
+std::vector<VisibilityFromViewPoint> ViewpointReduction::getSelectedVPs()
 {
     return this->viewpoints_kept;
 }
@@ -365,8 +365,6 @@ void ViewpointReduction::solveSetCoveringProbGreedy()
             }
         }
 
-        // VisibilityContainer vc_temp(max_area_vp, &this->view_points[max_area_vp], tris_temp);   //TO-DO
-        // this->viewpoints_kept.push_back(vc_temp);
         vps_kept.push_back(max_area_vp);
 
         itn++;
@@ -574,13 +572,12 @@ void ViewpointReduction::setViewpointsKept(std::vector<int> vp_indices)
             }
         }
 
-        // VisibilityContainer vc_temp(vp_index, &this->view_points[vp_index], tris_temp);  //TO-DO:
-        this->viewpoints_kept.push_back(VisibilityContainer(vp_index, &this->view_points[vp_index], tris_temp));
+        this->viewpoints_kept.push_back(VisibilityFromViewPoint(vp_index, &this->view_points[vp_index], tris_temp));
     }
 }
 
 
-VisibilityContainer::VisibilityContainer(int vp_num, StateVector *VP, std::vector<tri_t*> tri)
+VisibilityFromViewPoint::VisibilityFromViewPoint(int vp_num, StateVector *VP, std::vector<tri_t*> tri)
 {
     this->vp_number = vp_num;
     this->view_point = *VP;
@@ -593,22 +590,22 @@ VisibilityContainer::VisibilityContainer(int vp_num, StateVector *VP, std::vecto
     }
 }
 
-int VisibilityContainer::getVPNum()
+int VisibilityFromViewPoint::getVPNum()
 {
     return this->vp_number;
 }
 
-StateVector* VisibilityContainer::getVP()
+StateVector* VisibilityFromViewPoint::getVP()
 {
     return &this->view_point;
 }
 
-std::vector<tri_t*> VisibilityContainer::getTriVect()
+std::vector<tri_t*> VisibilityFromViewPoint::getTriVect()
 {
     return this->triangle_vector;
 }
 
-float VisibilityContainer::getAreaCovered()
+float VisibilityFromViewPoint::getAreaCovered()
 {
     return this->area_covered;
 }

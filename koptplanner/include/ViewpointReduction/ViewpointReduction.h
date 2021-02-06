@@ -79,7 +79,7 @@ public:
  * Class is to hold information on the view points and the correspoinding visible surfaces from them, 
  * excluding those already visible from a previously selected view point
  * */
-class VisibilityContainer
+class VisibilityFromViewPoint
 {
 private:
     int vp_number;
@@ -88,9 +88,9 @@ private:
     float area_covered;
 public:
     /**
-     * Constructor to set all VisibilityContainer member variables.
+     * Constructor to set all VisibilityFromViewPoint member variables.
      * */
-    VisibilityContainer(int vp_num, StateVector *VP, std::vector<tri_t*> tri);
+    VisibilityFromViewPoint(int vp_num, StateVector *VP, std::vector<tri_t*> tri);
 
     /**
      * \returns Index of the view point in the original c-style array represented by the container
@@ -125,7 +125,7 @@ class ViewpointReduction
 private:
     VisibilityMatrix vis_matrix;
     int vp_count;
-    std::vector<VisibilityContainer> viewpoints_kept;   //Viewpoints that are kept as a minimum set
+    std::vector<VisibilityFromViewPoint> viewpoints_kept;   //Viewpoints that are kept as a minimum set
     int iteration;
     std::vector<tri_t *> triangles;
     std::vector<tri_t *> triangles_considered;
@@ -165,7 +165,7 @@ public:
     /**
      * \returns Set of view points best covering the mesh as a result of set cover problem solver 
      * */
-    std::vector<VisibilityContainer> getSelectedVPs();
+    std::vector<VisibilityFromViewPoint> getSelectedVPs();
 
     /**
      * \returns Mesh elements that are not visible from any view point in the selected best covering set

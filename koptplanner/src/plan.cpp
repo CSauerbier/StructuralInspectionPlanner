@@ -616,7 +616,7 @@ bool plan(koptplanner::inspection::Request  &req,
     time_visualization -= time.tv_sec * 1000000 + time.tv_usec;
 
     ros::Rate delayRate(20);
-    std::vector<VisibilityContainer> temp_vc = vpRedCombined.getSelectedVPs();
+    std::vector<VisibilityFromViewPoint> temp_vc = vpRedCombined.getSelectedVPs();
 
     Singleton<FacetVisualization>().visualizeTriangles(gripper);
     delayRate.sleep();
